@@ -1,310 +1,325 @@
-body, html, #root {
-  height: fit-content;
-  width: 100vw;
-  margin: 0;
-  font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: #f5f5f7;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow-x: hidden;
+body,
+html,
+#root {
+    height: fit-content;
+    width: 100vw;
+    margin: 0;
+    font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f5f5f7;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-x: hidden;
 }
 
 
 .dashboard-container {
-  width: 50%;
-  height: fit-content;
-  padding: 2rem;
-  margin: 20px;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 12px 24px rgba(255, 127, 0, 0.12);
-  font-family: 'Poppins', sans-serif;
-  text-align: center;
-  color: #333;
-  position: relative;
+    width: 50%;
+    height: fit-content;
+    padding: 2rem;
+    margin: 20px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 12px 24px rgba(255, 127, 0, 0.12);
+    font-family: 'Poppins', sans-serif;
+    text-align: center;
+    color: #333;
+    position: relative;
 }
 
 .dashboard-container h1 {
-  font-size: 1.75rem;
-  color: #ff6f00;
-  margin-bottom: 1.5rem;
+    font-size: 1.75rem;
+    color: #ff6f00;
+    margin-bottom: 1.5rem;
 }
 
 .card {
-  background: #fff8f0;
-  border: 1px solid #ffe1c1;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 4px 12px rgba(255, 111, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+    background: #fff8f0;
+    border: 1px solid #ffe1c1;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(255, 111, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .saldo-card h2 {
-  margin-bottom: 0.5rem;
-  color: #ff6f00;
+    margin-bottom: 0.5rem;
+    color: #ff6f00;
 }
 
 .saldo {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #333;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
 }
 
 .qr-card canvas {
-  margin: 1rem 0;
+    margin: 1rem 0;
 }
 
 .matricula {
-  font-size: 0.9rem;
-  color: #888;
+    font-size: 0.9rem;
+    color: #888;
 }
 
 .menu-opcoes button {
-  display: block;
-  width: 100%;
-  margin: 0.5rem 0;
-  padding: 0.9rem;
-  background: #ff6f00;
-  color: white;
-  font-weight: bold;
-  font-size: 1rem;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(255, 111, 0, 0.25);
-  transition: background 0.3s ease;
+    display: block;
+    width: 100%;
+    margin: 0.5rem 0;
+    padding: 0.9rem;
+    background: #ff6f00;
+    color: white;
+    font-weight: bold;
+    font-size: 1rem;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(255, 111, 0, 0.25);
+    transition: background 0.3s ease;
 }
 
 .menu-opcoes button:hover {
-  background: #ff8c00;
+    background: #ff8c00;
 }
 
 /* MODAL base */
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
 }
 
 .modal-content {
-  background: white;
-  padding: 2rem;
-  border-radius: 16px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
-  width: 90%;
-  max-width: 400px;
-  text-align: center;
-  animation: fadeIn 0.3s ease-in-out;
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    animation: fadeIn 0.3s ease-in-out;
 }
 
 .modal-content h2 {
-  color: #ff6f00;
-  margin-bottom: 1rem;
+    color: #ff6f00;
+    margin-bottom: 1rem;
 }
 
 .modal-content input {
-  width: 100%;
-  padding: 0.85rem;
-  margin-bottom: 1rem;
-  border: 1.8px solid #ddd;
-  border-radius: 10px;
-  font-size: 1rem;
+    width: 100%;
+    padding: 0.85rem;
+    margin-bottom: 1rem;
+    border: 1.8px solid #ddd;
+    border-radius: 10px;
+    font-size: 1rem;
 }
 
 .modal-content button {
-  width: 100%;
-  padding: 0.85rem;
-  margin-bottom: 1rem;
-  font-size: 1rem;
-  font-weight: bold;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
+    width: 100%;
+    padding: 0.85rem;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
 }
 
 .modal-content .confirmar {
-  background: #ff6f00;
-  color: white;
-  box-shadow: 0 4px 12px rgba(255, 111, 0, 0.25);
+    background: #ff6f00;
+    color: white;
+    box-shadow: 0 4px 12px rgba(255, 111, 0, 0.25);
 }
 
 .modal-content .confirmar:hover {
-  background: #ff8c00;
+    background: #ff8c00;
 }
 
 .modal-content .fechar {
-  background: #eee;
-  color: #333;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.13);
+    background: #eee;
+    color: #333;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.13);
 }
 
 .modal-content .fechar:hover {
-  background: #ddd;
+    background: #ddd;
 }
 
 .input-data-filtro {
-  width: 100%;
-  padding: 0.6rem 1rem;
-  font-size: 0.95rem;
-  border: 1.5px solid #ddd;
-  border-radius: 10px;
-  margin-bottom: 1rem;
-  color: #444;
-  background: #fff;
-  outline: none;
-  transition: border 0.3s ease;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+    border: 1.5px solid #ddd;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    color: #444;
+    background: #fff;
+    outline: none;
+    transition: border 0.3s ease;
 }
 
 .input-data-filtro:focus {
-  border-color: #ff6f00;
-  box-shadow: 0 0 4px #ff6f0040;
+    border-color: #ff6f00;
+    box-shadow: 0 0 4px #ff6f0040;
 }
 
 .loading-transacoes {
-  width: 40px;
-  height: 40px;
-  margin: 2rem auto;
-  border: 6px solid #ffe1c1;
-  border-top: 6px solid #ff6f00;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+    width: 40px;
+    height: 40px;
+    margin: 2rem auto;
+    border: 6px solid #ffe1c1;
+    border-top: 6px solid #ff6f00;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
 }
 
 .loading-transacoes {
-  width: 40px;
-  height: 40px;
-  margin: 2rem auto;
-  border: 6px solid #ffe1c1;
-  border-top: 6px solid #ff6f00;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+    width: 40px;
+    height: 40px;
+    margin: 2rem auto;
+    border: 6px solid #ffe1c1;
+    border-top: 6px solid #ff6f00;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
 }
 
 .historico-lista {
-  list-style: none;
-  padding: 0;
-  text-align: left;
-  font-size: 0.95rem;
-  margin-bottom: 1rem;
-  overflow: auto;
-  max-height: 50vh;
+    list-style: none;
+    padding: 0;
+    text-align: left;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    overflow: auto;
+    max-height: 50vh;
 }
 
 .historico-lista li {
-  margin-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
 }
 
 .qr-loading-spinner {
-  width: 50px;
-  height: 50px;
-  margin: 1rem auto;
-  border: 6px solid #ffd6a0;
-  border-top: 6px solid #ff6f00;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+    width: 50px;
+    height: 50px;
+    margin: 1rem auto;
+    border: 6px solid #ffd6a0;
+    border-top: 6px solid #ff6f00;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
 }
 
 .transacao {
-  border-radius: 12px;
-  padding: 12px 16px;
-  margin-bottom: 10px;
-  font-size: 0.95rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #fcf1e4ee;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fcf1e4ee;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 .transacao.recharge {
-  border-left: 5px solid #7dd400;
+    border-left: 5px solid #7dd400;
 }
 
 .transacao.discount {
-  border-left: 5px solid #f51e0e;
+    border-left: 5px solid #f51e0e;
 }
 
 .transacao .descricao {
-  flex: 1;
-  margin-left: 12px;
-  color: #333;
+    flex: 1;
+    margin-left: 12px;
+    color: #333;
 }
 
 .transacao .valor {
-  font-weight: bold;
-  white-space: nowrap;
+    font-weight: bold;
+    white-space: nowrap;
 }
 
 .transacao-icon {
-  font-size: 1.3rem;
+    font-size: 1.3rem;
 }
 
 .dashboard-header {
-  text-align: center;
-  margin-bottom: 2rem;
-  user-select: none;
-  animation: fadeDown 0.5s ease;
+    text-align: center;
+    margin-bottom: 2rem;
+    user-select: none;
+    animation: fadeDown 0.5s ease;
 }
 
 .dashboard-header .emoji {
-  font-size: 60px;
-  display: block;
-  margin-bottom: 0.3rem;
+    font-size: 60px;
+    display: block;
+    margin-bottom: 0.3rem;
 }
 
 .dashboard-header h2 {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: #ff6f00;
-  margin: 0;
-  letter-spacing: 0.5px;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #ff6f00;
+    margin: 0;
+    letter-spacing: 0.5px;
 }
 
 .dashboard-header p {
-  font-size: 1rem;
-  color: #444;
-  margin-top: 0.4rem;
+    font-size: 1rem;
+    color: #444;
+    margin-top: 0.4rem;
 }
 
 @keyframes fadeDown {
-  from {
-    opacity: 0;
-    transform: translateY(-12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(-12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 
 /* Fade-in animation */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 
 @media (max-width: 480px) {
-  .dashboard-container {
-    padding: 1rem;
-    width: 90%;
-  }
+    .dashboard-container {
+        padding: 1rem;
+        width: 90%;
+    }
 }

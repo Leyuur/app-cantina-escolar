@@ -1,26 +1,26 @@
 .header {
-  position: relative;
-  padding: 1rem;
-  border-bottom: 2px solid #eee;
-  margin-bottom: 1rem;
+    position: relative;
+    padding: 1rem;
+    border-bottom: 2px solid #eee;
+    margin-bottom: 1rem;
 }
 
 .btn-sair {
-  position: absolute;
-  left: 1.5rem;
-  top: 1.5rem;
-  background: none;
-  box-shadow: none;
-  color: #c0392b;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.3s ease;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
+    position: absolute;
+    left: 1.5rem;
+    top: 1.5rem;
+    background: none;
+    box-shadow: none;
+    color: #c0392b;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s ease;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
 
 }
 
