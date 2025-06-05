@@ -1,7 +1,7 @@
 /* Login.css */
 
 body, html, #root {
-  height: fit-content;
+  height: 100%;
   width: 100vw;
   margin: 0;
   font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
