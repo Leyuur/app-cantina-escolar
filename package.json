@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
-  "homepage": "https://leyuur.github.io/lanchei-app-v1/",
+  "homepage": "https://leyuur.github.io/app-cantina-escolar",
   "dependencies": {
     "@tailwindcss/vite": "^4.1.8",
     "qrcode.react": "^4.2.0",
