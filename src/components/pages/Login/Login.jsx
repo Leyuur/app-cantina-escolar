@@ -10,20 +10,26 @@ export default function Login({ setPage }) {
 
   const onSubmit = (e) => {
     e.preventDefault();
-    // setPage(
-    //   <AlunoDashboard
-    //     nome={"Yuri"}
-    //     saldo={8}
-    //     matricula={"12345"}
-    //     setPage={setPage}
-    //   />
-    // );
-    setPage(
-      <AdmDashboard 
-        nomeAdmin={"Jorge"}
-        setPage={setPage}
-      />
-    )
+    if (user == "12345" && pass == "12345") {
+      setPage(
+        <AlunoDashboard
+          nome={"Yuri"}
+          saldo={8}
+          matricula={"12345"}
+          setPage={setPage}
+        />
+      );
+    } else if (user == "admin" && pass == "admin") {
+      setPage(
+        <AdmDashboard
+          nomeAdmin={"Jorge"}
+          setPage={setPage}
+        />
+      )
+    } else {
+      alert("Matrícula ou senha incorreta.")
+    }
+
   };
 
   return (
@@ -103,6 +109,7 @@ export default function Login({ setPage }) {
 
         <button type="submit">Entrar</button>
       </form>
+      <footer>Made by <a href="" style={{ color: "#ff6f00" }}>Yuri Duarte</a></footer>
     </main>
   );
 }

@@ -10,7 +10,7 @@
     left: 1.5rem;
     top: 1.5rem;
     background: none;
-    box-shadow: none;   
+    box-shadow: none;
     color: #c0392b;
     border: none;
     padding: 0.5rem 1rem;
@@ -28,4 +28,37 @@
     background: none;
     box-shadow: none;
     transform: scale(1.02);
+}
+
+.qrcode-fechar {
+    margin-top: 20px;
+}
+
+@media screen and (min-width: 769px) {
+
+    .desktop-modais {
+        display: grid;
+        gap: 1%;
+    }
+
+    .desktop-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1%;
+    }
+
+    .static-modal {
+        box-shadow: none;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        width: auto;
+    }
+
+    .static-modal .fechar {
+        display: none;
+    }
+
+    .card.menu-opcoes {
+        display: none;
+    }
 }

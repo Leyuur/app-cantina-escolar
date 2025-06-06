@@ -10,16 +10,62 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage }) {
     const [qrReady, setQrReady] = useState(false);
     const [dataFiltro, setDataFiltro] = useState('');
     const [carregandoHistorico, setCarregandoHistorico] = useState(true);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [showQrModal, setShowQrModal] = useState(false);
+
+    const qrRef = useRef(null);
+
+    useEffect(() => {
+        const timeout = setTimeout(() => setQrReady(true), 300);
+        return () => clearTimeout(timeout);
+    }, [matricula]);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        if (!isMobile) {
+            setCarregandoHistorico(true);
+            const timeout = setTimeout(() => setCarregandoHistorico(false), 800);
+            return () => clearTimeout(timeout);
+        }
+    }, [isMobile]);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (qrRef.current?.querySelector('canvas')) {
+                setQrReady(true);
+                clearInterval(interval);
+            }
+        }, 100);
+        return () => clearInterval(interval);
+    }, [matricula]);
+
+    useEffect(() => {
+        if (showHistorico) {
+            setCarregandoHistorico(true);
+            const timeout = setTimeout(() => setCarregandoHistorico(false), 800);
+            return () => clearTimeout(timeout);
+        }
+    }, [showHistorico]);
 
     function aplicarFiltroData(novaData) {
         setDataFiltro(novaData);
         setCarregandoHistorico(true);
-
-        setTimeout(() => {
-            setCarregandoHistorico(false);
-        }, 600);
+        setTimeout(() => setCarregandoHistorico(false), 600);
     }
 
+    function formatarValor(e) {
+        let valor = e.target.value.replace(/\D/g, '');
+        valor = (Number(valor) / 100).toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+        });
+        setValorRecarga(valor);
+    }
 
     const historico = [
         { tipo: 'recharge', descricao: 'Recarga', valor: 20.0, data: '2025-06-05' },
@@ -32,78 +78,38 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage }) {
         ? historico.filter((item) => item.data === dataFiltro)
         : historico;
 
-    useEffect(() => {
-        const timeout = setTimeout(() => {
-            setQrReady(true);
-        }, 300);
-
-        return () => clearTimeout(timeout);
-    }, [matricula]);
-
-
-    const qrRef = useRef(null);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            if (qrRef.current?.querySelector('canvas')) {
-                setQrReady(true);
-                clearInterval(interval);
-            }
-        }, 100);
-
-        return () => clearInterval(interval);
-    }, [matricula]);
-
-    useEffect(() => {
-        if (showHistorico) {
-            setCarregandoHistorico(true);
-            const timeout = setTimeout(() => {
-                setCarregandoHistorico(false);
-            }, 800);
-
-            return () => clearTimeout(timeout);
-        }
-    }, [showHistorico]);
-
-
     return (
         <div className="dashboard-container">
+            <button className="btn-sair" onClick={() => setPage(<Login setPage={setPage} />)}>
+                <span className="material-icons">logout</span> Sair
+            </button>
+
             <header className="dashboard-header">
                 <span className="emoji">🍔</span>
                 <h2>Lanchou App</h2>
                 <p>Olá, <strong>{nome}</strong>!</p>
-                <button className="btn-sair" onClick={() => setPage(<Login setPage={setPage} />)}>
-                    <span className="material-icons">logout</span> Sair
-                </button>
             </header>
 
+            {!isMobile && (
+                <div className="desktop-modais" style={{ gridTemplateColumns: "1fr 1fr" }}>
+                    <div className="card saldo-card">
+                        <h2>💰 Saldo atual</h2>
+                        <p className="saldo">R$ {saldo.toFixed(2)}</p>
+                    </div>
 
-            <div className="card saldo-card">
-                <h2>💰 Saldo atual</h2>
-                <p className="saldo">R$ {saldo.toFixed(2)}</p>
-            </div>
+                    <div className="card qr-card" ref={qrRef}>
+                        <h2>📲 Seu QR Code</h2>
+                        {!qrReady ? (
+                            <div className="qr-loading-spinner"></div>
+                        ) : (
+                            <div onClick={() => setShowQrModal(true)} style={{ cursor: 'pointer' }}>
+                                <QRCodeCanvas value={matricula} size={150} />
+                            </div>
+                        )}
+                        <p className="matricula">Matrícula: <b>{matricula}</b></p>
+                    </div>
 
-            <div className="card qr-card" ref={qrRef}>
-                <h2>📲 Seu QR Code</h2>
-
-                {!qrReady ? (
-                    <div className="qr-loading-spinner"></div>
-                ) : (
-                    <QRCodeCanvas value={matricula} size={150} />
-                )}
-
-                <p className="matricula">Matrícula: <b>{matricula}</b></p>
-            </div>
-
-            <div className="card menu-opcoes">
-                <button onClick={() => setShowRecarga(true)}>Recarregar Saldo</button>
-                <button onClick={() => setShowHistorico(true)}>Ver Histórico</button>
-            </div>
-
-            {/* Modal de Recarga */}
-            {showRecarga && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
+                    <div className="modal-content static-modal">
                         <h2>➕ Recarregar Saldo</h2>
                         <input
                             type="text"
@@ -112,15 +118,9 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage }) {
                             onChange={formatarValor}
                         />
                         <button className="confirmar">Confirmar</button>
-                        <button className="fechar" onClick={() => { setShowRecarga(false); setValorRecarga("") }}>Fechar</button>
                     </div>
-                </div>
-            )}
 
-            {/* Modal de Histórico */}
-            {showHistorico && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
+                    <div className="modal-content static-modal">
                         <h2>📋 Histórico de Transações</h2>
                         <input
                             type="date"
@@ -128,7 +128,6 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage }) {
                             value={dataFiltro}
                             onChange={(e) => aplicarFiltroData(e.target.value)}
                         />
-
                         {carregandoHistorico ? (
                             <div className="loading-transacoes"></div>
                         ) : (
@@ -152,27 +151,100 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage }) {
                                 )}
                             </ul>
                         )}
+                    </div>
+                </div>
+            )}
 
+            {isMobile && (
+                <>
+                    <div className="card saldo-card">
+                        <h2>💰 Saldo atual</h2>
+                        <p className="saldo">R$ {saldo.toFixed(2)}</p>
+                    </div>
 
+                    <div className="card qr-card" ref={qrRef}>
+                        <h2>📲 Seu QR Code</h2>
+                        {!qrReady ? (
+                            <div className="qr-loading-spinner"></div>
+                        ) : (
+                            <div onClick={() => setShowQrModal(true)} style={{ cursor: 'pointer' }}>
+                                <QRCodeCanvas value={matricula} size={150} />
+                            </div>
+                        )}
+                        <p className="matricula">Matrícula: <b>{matricula}</b></p>
+                    </div>
 
+                    <div className="card menu-opcoes">
+                        <button onClick={() => setShowRecarga(true)}>Recarregar Saldo</button>
+                        <button onClick={() => setShowHistorico(true)}>Ver Histórico</button>
+                    </div>
+                </>
+            )}
+
+            {isMobile && showRecarga && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <h2>➕ Recarregar Saldo</h2>
+                        <input
+                            type="text"
+                            placeholder="Valor em R$"
+                            value={valorRecarga}
+                            onChange={formatarValor}
+                        />
+                        <button className="confirmar">Confirmar</button>
+                        <button className="fechar" onClick={() => { setShowRecarga(false); setValorRecarga("") }}>Fechar</button>
+                    </div>
+                </div>
+            )}
+
+            {isMobile && showHistorico && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <h2>📋 Histórico de Transações</h2>
+                        <input
+                            type="date"
+                            className="input-data-filtro"
+                            value={dataFiltro}
+                            onChange={(e) => aplicarFiltroData(e.target.value)}
+                        />
+                        {carregandoHistorico ? (
+                            <div className="loading-transacoes"></div>
+                        ) : (
+                            <ul className="historico-lista">
+                                {historicoFiltrado.length > 0 ? (
+                                    historicoFiltrado.map((item, index) => (
+                                        <li className={`transacao ${item.tipo}`} key={index}>
+                                            <span className="transacao-icon">{item.tipo === 'recharge' ? '🟢' : '🔴'}</span>
+                                            <span className="descricao">
+                                                {item.descricao} - {item.data.split('-').reverse().join('/')}
+                                            </span>
+                                            <span className="valor">
+                                                {item.tipo === 'recharge' ? '+' : '-'} R$ {item.valor.toFixed(2)}
+                                            </span>
+                                        </li>
+                                    ))
+                                ) : (
+                                    <li style={{ padding: '1rem', textAlign: 'center', color: '#999' }}>
+                                        Nenhuma transação encontrada.
+                                    </li>
+                                )}
+                            </ul>
+                        )}
                         <button className="fechar" onClick={() => setShowHistorico(false)}>Fechar</button>
+                    </div>
+                </div>
+            )}
+
+            {showQrModal && (
+                <div className="modal-overlay" onClick={() => setShowQrModal(false)}>
+                    <div className="modal-content qr-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "400px" }}>
+                        <h2>📲 QR Code</h2>
+                        <QRCodeCanvas value={matricula} size={250} />
+                        <p className="matricula">Matrícula: <b>{matricula}</b></p>
+                        <button className="fechar" onClick={() => setShowQrModal(false)}>Fechar</button>
                     </div>
                 </div>
             )}
         </div>
     );
-
-    function formatarValor(e) {
-        let valor = e.target.value;
-
-        valor = valor.replace(/\D/g, '');
-
-        valor = (Number(valor) / 100).toLocaleString('pt-BR', {
-            style: 'currency',
-            currency: 'BRL',
-        });
-
-        setValorRecarga(valor);
-    }
-
 }
