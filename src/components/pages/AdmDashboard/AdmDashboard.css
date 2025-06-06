@@ -34,6 +34,10 @@
     margin-top: 20px;
 }
 
+#qr-reader video {
+  transform: scaleX(-1);
+}
+
 @media screen and (min-width: 769px) {
 
     .desktop-modais {
