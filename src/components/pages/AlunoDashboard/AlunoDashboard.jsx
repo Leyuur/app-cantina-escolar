@@ -1,9 +1,10 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import Login from '../Login/Login';
 import "./AlunoDashboard.css";
 
-export default function AlunoDashboard({ nome, matricula, saldo, setPage }) {
+export default function AlunoDashboard({ nome, matricula, saldo, setPage, pagamento }) {
     const [showRecarga, setShowRecarga] = useState(false);
     const [showHistorico, setShowHistorico] = useState(false);
     const [valorRecarga, setValorRecarga] = useState('');
@@ -12,8 +13,26 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage }) {
     const [carregandoHistorico, setCarregandoHistorico] = useState(true);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [showQrModal, setShowQrModal] = useState(false);
+    const [loadingPagamento, setLoadingPagamento] = useState(false);
+    const [mensagemCredito, setMensagemCredito] = useState('');
 
     const qrRef = useRef(null);
+
+    useEffect(() => {
+        if (pagamento) {
+            const valorNumerico = parseFloat(pagamento);
+            if (!isNaN(valorNumerico) && valorNumerico > 0) {
+                setMensagemCredito(`✅ Créditos de R$ ${valorNumerico.toFixed(2)} adicionados com sucesso!`);
+
+                const timeout = setTimeout(() => {
+                    setMensagemCredito('');
+                }, 5000);
+
+                return () => clearTimeout(timeout);
+            }
+        }
+    }, [pagamento]);
+
 
     useEffect(() => {
         const timeout = setTimeout(() => setQrReady(true), 300);
@@ -67,6 +86,32 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage }) {
         setValorRecarga(valor);
     }
 
+    async function iniciarPagamento() {
+        setLoadingPagamento(true);
+
+        try {
+            const valorNumerico = Number(valorRecarga.replace(/[^\d]+/g, '')) / 100;
+            const response = await fetch('https://lanchouapp.site/server.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ valor: valorNumerico })
+            });
+
+            const data = await response.json();
+
+            if (data.init_point) {
+                window.location.href = data.init_point;
+            } else {
+                alert("Erro ao iniciar pagamento.");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Erro de conexão com o servidor.");
+        } finally {
+            setLoadingPagamento(false);
+        }
+    }
+
     const historico = [
         { tipo: 'recharge', descricao: 'Recarga', valor: 20.0, data: '2025-06-05' },
         { tipo: 'discount', descricao: 'Salgadinho e Suco', valor: 8.5, data: '2025-06-04' },
@@ -79,7 +124,14 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage }) {
         : historico;
 
     return (
+
         <div className="dashboard-container">
+            {mensagemCredito && (
+                <div className="mensagem-credito">
+                    {mensagemCredito}
+                </div>
+            )}
+
             <button className="btn-sair" onClick={() => setPage(<Login setPage={setPage} />)}>
                 <span className="material-icons">logout</span> Sair
             </button>
@@ -93,12 +145,16 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage }) {
             {!isMobile && (
                 <div className="desktop-modais" style={{ gridTemplateColumns: "1fr 1fr" }}>
                     <div className="card saldo-card">
-                        <h2>💰 Saldo atual</h2>
+                        <h2><span class="material-symbols-outlined">
+                            wallet
+                        </span> Saldo atual</h2>
                         <p className="saldo">R$ {saldo.toFixed(2)}</p>
                     </div>
 
                     <div className="card qr-card" ref={qrRef}>
-                        <h2>📲 Seu QR Code</h2>
+                        <h2><span class="material-symbols-outlined">
+                            qr_code_scanner
+                        </span> Seu QR Code</h2>
                         {!qrReady ? (
                             <div className="qr-loading-spinner"></div>
                         ) : (
@@ -110,18 +166,24 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage }) {
                     </div>
 
                     <div className="modal-content static-modal">
-                        <h2>➕ Recarregar Saldo</h2>
+                        <h2><span class="material-symbols-outlined">
+                            payment_arrow_down
+                        </span> Recarregar Saldo</h2>
                         <input
                             type="text"
                             placeholder="Valor em R$"
                             value={valorRecarga}
                             onChange={formatarValor}
                         />
-                        <button className="confirmar">Confirmar</button>
+                        <button className="confirmar" onClick={iniciarPagamento} disabled={loadingPagamento}>
+                            {loadingPagamento ? "Aguarde..." : "Pagar com Mercado Pago"}
+                        </button>
                     </div>
 
                     <div className="modal-content static-modal">
-                        <h2>📋 Histórico de Transações</h2>
+                        <h2><span class="material-symbols-outlined">
+                            receipt
+                        </span> Histórico de Transações</h2>
                         <input
                             type="date"
                             className="input-data-filtro"
@@ -155,15 +217,20 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage }) {
                 </div>
             )}
 
+            {/* MOBILE */}
             {isMobile && (
                 <>
                     <div className="card saldo-card">
-                        <h2>💰 Saldo atual</h2>
+                        <h2><span class="material-symbols-outlined">
+                            wallet
+                        </span> Saldo atual</h2>
                         <p className="saldo">R$ {saldo.toFixed(2)}</p>
                     </div>
 
                     <div className="card qr-card" ref={qrRef}>
-                        <h2>📲 Seu QR Code</h2>
+                        <h2><span class="material-symbols-outlined">
+                            qr_code_scanner
+                        </span> Seu QR Code</h2>
                         {!qrReady ? (
                             <div className="qr-loading-spinner"></div>
                         ) : (
@@ -184,14 +251,18 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage }) {
             {isMobile && showRecarga && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <h2>➕ Recarregar Saldo</h2>
+                        <h2><span class="material-symbols-outlined">
+                            payment_arrow_down
+                        </span> Recarregar Saldo</h2>
                         <input
                             type="text"
                             placeholder="Valor em R$"
                             value={valorRecarga}
                             onChange={formatarValor}
                         />
-                        <button className="confirmar">Confirmar</button>
+                        <button className="confirmar" onClick={iniciarPagamento} disabled={loadingPagamento}>
+                            {loadingPagamento ? "Aguarde..." : "Pagar com Mercado Pago"}
+                        </button>
                         <button className="fechar" onClick={() => { setShowRecarga(false); setValorRecarga("") }}>Fechar</button>
                     </div>
                 </div>
@@ -200,7 +271,9 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage }) {
             {isMobile && showHistorico && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <h2>📋 Histórico de Transações</h2>
+                        <h2><span class="material-symbols-outlined">
+                            receipt
+                        </span> Histórico de Transações</h2>
                         <input
                             type="date"
                             className="input-data-filtro"
@@ -238,7 +311,9 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage }) {
             {showQrModal && (
                 <div className="modal-overlay" onClick={() => setShowQrModal(false)}>
                     <div className="modal-content qr-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "400px" }}>
-                        <h2>📲 QR Code</h2>
+                        <h2><span class="material-symbols-outlined">
+                            qr_code_scanner
+                        </span> QR Code</h2>
                         <QRCodeCanvas value={matricula} size={250} />
                         <p className="matricula">Matrícula: <b>{matricula}</b></p>
                         <button className="fechar" onClick={() => setShowQrModal(false)}>Fechar</button>
@@ -246,5 +321,6 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage }) {
                 </div>
             )}
         </div>
+
     );
-}
+} ''
