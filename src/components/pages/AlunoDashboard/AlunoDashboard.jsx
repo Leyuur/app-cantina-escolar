@@ -4,7 +4,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import Login from '../Login/Login';
 import "./AlunoDashboard.css";
 
-export default function AlunoDashboard({ nome, matricula, saldo, setPage, pagamento }) {
+export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarga }) {
     const [showRecarga, setShowRecarga] = useState(false);
     const [showHistorico, setShowHistorico] = useState(false);
     const [valorRecarga, setValorRecarga] = useState('');
@@ -19,10 +19,11 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, pagame
     const qrRef = useRef(null);
 
     useEffect(() => {
-        if (pagamento) {
-            const valorNumerico = parseFloat(pagamento);
-            if (!isNaN(valorNumerico) && valorNumerico > 0) {
-                setMensagemCredito(`✅ Créditos de R$ ${valorNumerico.toFixed(2)} adicionados com sucesso!`);
+        if (recarga) {
+            const [params] = useSearchParams();
+            const valorRecarga = params.get("recarga");
+            if (!isNaN(valorRecarga) && valorRecarga > 0) {
+                setMensagemCredito(`✅ Créditos de R$ ${valorRecarga.toFixed(2)} adicionados com sucesso!`);
 
                 const timeout = setTimeout(() => {
                     setMensagemCredito('');
@@ -31,7 +32,7 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, pagame
                 return () => clearTimeout(timeout);
             }
         }
-    }, [pagamento]);
+    }, [recarga]);
 
 
     useEffect(() => {

@@ -17,8 +17,8 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={page} />
-
-        <Route path="/pagamento-sucesso" element={<PagamentoSucesso setPage={setPage}/>} />
+        <Route path="/dashboard" element={<AlunoDashboard />} />  
+        <Route path="/pagamento-sucesso" element={<PagamentoSucesso setPage={setPage} />} />
         <Route path="/pagamento-falhou" element={<PagamentoFalhou />} />
         <Route path="/pagamento-pendente" element={<PagamentoPendente />} />
       </Routes>
