@@ -2,35 +2,51 @@ import { useState } from "react";
 import AlunoDashboard from "../AlunoDashboard/AlunoDashboard";
 import AdmDashboard from "../AdmDashboard/AdmDashboard";
 import "./Login.css";
+import { toast } from "react-toastify";
+import Loading from "../../tools/Loading/Loading";
+import { verificarUsuario } from "../../tools/functions";
 
 export default function Login({ setPage }) {
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false)
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    if (user == "12345" && pass == "12345") {
+
+    if(user == "" || pass == "") {
+      toast.error("Você deve digitar algo.")
+      return false
+    }
+    setLoading(true)
+    const login = await verificarUsuario(user, pass)
+    setLoading(false)
+
+    if (login.adm) {
+      localStorage.setItem("adm", login.nome)
       setPage(
-        <AlunoDashboard
-          nome={"Yuri"}
-          saldo={8}
-          matricula={"12345"}
-          setPage={setPage}
-        />
-      );
-    } else if (user == "admin" && pass == "admin") {
+        <AdmDashboard setPage={setPage}/>)
+    } else if (login && !login.adm) {
+      localStorage.setItem("usuario", JSON.stringify(login))
+      console.log(login)
       setPage(
-        <AdmDashboard
-          nomeAdmin={"Jorge"}
-          setPage={setPage}
-        />
+        <AlunoDashboard setPage={setPage}/>
       )
     } else {
-      alert("Matrícula ou senha incorreta.")
+      toast.error("Matrícula ou senha inválida")
+      return false
     }
-
   };
+
+  if (localStorage.getItem("adm")) {
+    const adm = JSON.parse(localStorage.getItem("adm"))
+    setPage(<AdmDashboard nomeAdmin={adm.nome} setPage={setPage} />)
+  }
+  if (localStorage.getItem("usuario")) {
+    const user = JSON.parse(localStorage.getItem("usuario"))
+    setPage(<AlunoDashboard nome={user.nome} matricula={user.matricula} saldo={user.saldo} setPage={setPage} />)
+  }
 
   return (
     <main className="login-wrapper" role="main" aria-label="Formulário de login">
@@ -110,6 +126,10 @@ export default function Login({ setPage }) {
         <button type="submit">Entrar</button>
       </form>
       <footer>Made by <a href="" style={{ color: "#ff6f00" }}>Yuri Duarte</a></footer>
+
+      {loading && (
+        <Loading />
+      )}
     </main>
   );
 }

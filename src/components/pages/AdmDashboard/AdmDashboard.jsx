@@ -3,7 +3,7 @@ import './AdmDashboard.css';
 import Login from '../Login/Login';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 
-export default function AdmDashboard({ nomeAdmin, setPage }) {
+export default function AdmDashboard({ setPage }) {
     const [showHistorico, setShowHistorico] = useState(false);
     const [showCadastro, setShowCadastro] = useState(false);
     const [showDesconto, setShowDesconto] = useState(false);

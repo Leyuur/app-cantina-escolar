@@ -1,12 +1,16 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import Login from '../Login/Login';
 import "./AlunoDashboard.css";
 import logoPix from '../../../img/logo-pix.png';
 import logoMercadoPago from '../../../img/logo-mercadopago.png';
+import { toast } from 'react-toastify';
+import Loading from '../../tools/Loading/Loading';
+import Pix from '../Pagamento/Pix';
+import { getHistorico } from '../../tools/functions.js';
 
-export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarga }) {
+export default function AlunoDashboard({ setPage }) {
     const [showRecarga, setShowRecarga] = useState(false);
     const [showHistorico, setShowHistorico] = useState(false);
     const [valorRecarga, setValorRecarga] = useState('');
@@ -15,27 +19,28 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
     const [carregandoHistorico, setCarregandoHistorico] = useState(true);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [showQrModal, setShowQrModal] = useState(false);
-    const [loadingPagamento, setLoadingPagamento] = useState(false);
-    const [mensagemCredito, setMensagemCredito] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [pixData, setPixData] = useState(null);
+    const [usuario, setUsuario] = useState(null)
+
 
     const qrRef = useRef(null);
 
+    const [searchParams] = useSearchParams();
+    const recarga = searchParams.get("recarga");
+
     useEffect(() => {
-        if (recarga) {
-            const [params] = useSearchParams();
-            const valorRecarga = params.get("recarga");
-            if (!isNaN(valorRecarga) && valorRecarga > 0) {
-                setMensagemCredito(`✅ Créditos de R$ ${valorRecarga.toFixed(2)} adicionados com sucesso!`);
-                const timeout = setTimeout(() => setMensagemCredito(''), 5000);
-                return () => clearTimeout(timeout);
-            }
+        if (recarga && !isNaN(recarga) && recarga > 0) {
+            toast.success(`R$ ${parseFloat(recarga).toFixed(2)} em créditos adicionados com sucesso!`);
         }
     }, [recarga]);
 
     useEffect(() => {
+        if (!usuario) return;
         const timeout = setTimeout(() => setQrReady(true), 300);
         return () => clearTimeout(timeout);
-    }, [matricula]);
+    }, [usuario]);
+
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -59,7 +64,7 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
             }
         }, 100);
         return () => clearInterval(interval);
-    }, [matricula]);
+    }, [usuario]);
 
     useEffect(() => {
         if (showHistorico) {
@@ -85,11 +90,15 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
     }
 
     async function iniciarPagamento() {
-        setLoadingPagamento(true);
+        setLoading(true);
 
         try {
             const valorNumerico = Number(valorRecarga.replace(/[^\d]+/g, '')) / 100;
-            const response = await fetch('https://lanchouapp.site/server.php', {
+
+            if (valorNumerico <= 1) {
+                throw new Error("Você deve inserir um valor acima de R$ 1,00")
+            }
+            const response = await fetch('https://lanchouapp.site/endpoints/server.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ valor: valorNumerico, tipo: 'checkout' })
@@ -100,23 +109,25 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
             if (data.init_point) {
                 window.location.href = data.init_point;
             } else {
-                alert("Erro ao iniciar pagamento.");
+                toast.error("Erro ao iniciar pagamento.");
             }
         } catch (error) {
             console.error(error);
-            alert("Erro de conexão com o servidor.");
+            toast.error(error.message);
         } finally {
-            setLoadingPagamento(false);
+            setLoading(false);
         }
     }
 
     async function iniciarPagamentoPix() {
-        setLoadingPagamento(true);
-
+        setLoading(true);
         try {
             const valorNumerico = Number(valorRecarga.replace(/[^\d]+/g, '')) / 100;
+            if (valorNumerico <= 1) {
+                throw new Error("Você deve inserir um valor acima de R$ 1,00");
+            }
 
-            const response = await fetch('https://lanchouapp.site/server.php', {
+            const response = await fetch('https://lanchouapp.site/endpoints/server.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ valor: valorNumerico, tipo: 'pix' })
@@ -124,54 +135,63 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
 
             const data = await response.json();
 
-            if (data.qr_code_base64) {
-                const win = window.open();
-                win.document.write(`
-                    <h2>Escaneie com seu banco:</h2>
-                    <img src="data:image/png;base64,${data.qr_code_base64}" style="width:300px;height:300px;">
-                    <p>Ou copie e cole o código:</p>
-                    <textarea rows="5" style="width:100%">${data.qr_code}</textarea>
-                `);
+            if (data.qr_code_base64 && data.qr_code && data.id) {
+                setPixData({
+                    img: data.qr_code_base64,
+                    caminho: data.qr_code,
+                    statusUrl: `https://lanchouapp.site/endpoints/status.php?id=${data.id}`,
+                    id: data.id
+                });
             } else {
-                alert("Erro ao gerar QR Code do Pix.");
+                toast.error("Erro ao gerar QR Code do Pix.");
             }
         } catch (error) {
             console.error(error);
-            alert("Erro de conexão com o servidor.");
+            toast.error(error.message);
         } finally {
-            setLoadingPagamento(false);
+            setLoading(false);
         }
     }
 
+    useEffect(() => {
+        const user = localStorage.getItem("usuario");
+        if (user) {
+            setUsuario(JSON.parse(user));
+
+            console.log(user)
+        } else {
+            setPage(<Login setPage={setPage} />);
+        }
+    }, []);
+
+
+    // const historico = await getHistorico(usuario)
+    
+    if (!usuario || !historico) return <Loading />;
 
     const historico = [
-        { tipo: 'recharge', descricao: 'Recarga', valor: 20.0, data: '2025-06-05' },
-        { tipo: 'discount', descricao: 'Salgadinho e Suco', valor: 8.5, data: '2025-06-04' },
-        { tipo: 'discount', descricao: 'Pastel', valor: 5.0, data: '2025-06-03' },
-        { tipo: 'recharge', descricao: 'Recarga', valor: 20.0, data: '2025-06-02' },
-    ];
+        { descricao: "teste", data: "12/06/2025" }
+    ]
 
     const historicoFiltrado = dataFiltro
         ? historico.filter((item) => item.data === dataFiltro)
         : historico;
 
     return (
-
         <div className="dashboard-container">
-            {mensagemCredito && (
-                <div className="mensagem-credito">
-                    {mensagemCredito}
-                </div>
-            )}
 
-            <button className="btn-sair" onClick={() => setPage(<Login setPage={setPage} />)}>
+            <button className="btn-sair" onClick={() => {
+                localStorage.removeItem("usuario")
+                setPage(<Login setPage={setPage} />)
+                toast.error("Deslogado com sucesso!")
+            }}>
                 <span className="material-icons">logout</span> Sair
             </button>
 
             <header className="dashboard-header">
                 <span className="emoji">🍔</span>
                 <h2>Lanchou App</h2>
-                <p>Olá, <strong>{nome}</strong>!</p>
+                <p>Olá, <strong>{usuario.nome}</strong>!</p>
             </header>
 
             {!isMobile && (
@@ -180,7 +200,7 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
                         <h2><span class="material-symbols-outlined">
                             wallet
                         </span> Saldo atual</h2>
-                        <p className="saldo">R$ {saldo.toFixed(2)}</p>
+                        <p className="saldo">R$ {usuario.saldo}</p>
                     </div>
 
                     <div className="card qr-card" ref={qrRef}>
@@ -191,10 +211,10 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
                             <div className="qr-loading-spinner"></div>
                         ) : (
                             <div onClick={() => setShowQrModal(true)} style={{ cursor: 'pointer' }}>
-                                <QRCodeCanvas value={matricula} size={150} />
+                                <QRCodeCanvas value={usuario.matricula} size={150} />
                             </div>
                         )}
-                        <p className="matricula">Matrícula: <b>{matricula}</b></p>
+                        <p className="matricula">Matrícula: <b>{usuario.matricula}</b></p>
                     </div>
 
                     <div className="modal-content static-modal">
@@ -208,13 +228,13 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
                             onChange={formatarValor}
                         />
                         <div className="pagamento-botoes">
-                            <button className="btn-mercado-pago" onClick={iniciarPagamento} disabled={loadingPagamento}>
+                            <button className="btn-mercado-pago" onClick={iniciarPagamento} disabled={loading}>
                                 <img src={logoMercadoPago} alt="Mercado Pago" />
-                                {loadingPagamento ? "Aguarde..." : "Mercado Pago"}
+                                MercadoPago
                             </button>
-                            <button className="btn-pix" onClick={iniciarPagamentoPix} disabled={loadingPagamento}>
+                            <button className="btn-pix" onClick={iniciarPagamentoPix} disabled={loading}>
                                 <img src={logoPix} alt="Pix" />
-                                {loadingPagamento ? "Aguarde..." : "Pix"}
+                                Pix
                             </button>
                         </div>
 
@@ -242,7 +262,7 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
                                                 {item.descricao} - {item.data.split('-').reverse().join('/')}
                                             </span>
                                             <span className="valor">
-                                                {item.tipo === 'recharge' ? '+' : '-'} R$ {item.valor.toFixed(2)}
+                                                {item.tipo === 'recharge' ? '+' : '-'} R$ {item.valor}
                                             </span>
                                         </li>
                                     ))
@@ -264,7 +284,7 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
                         <h2><span class="material-symbols-outlined">
                             wallet
                         </span> Saldo atual</h2>
-                        <p className="saldo">R$ {saldo.toFixed(2)}</p>
+                        <p className="saldo">R$ {usuario.saldo}</p>
                     </div>
 
                     <div className="card qr-card" ref={qrRef}>
@@ -275,10 +295,10 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
                             <div className="qr-loading-spinner"></div>
                         ) : (
                             <div onClick={() => setShowQrModal(true)} style={{ cursor: 'pointer' }}>
-                                <QRCodeCanvas value={matricula} size={150} />
+                                <QRCodeCanvas value={usuario.matricula} size={150} />
                             </div>
                         )}
-                        <p className="matricula">Matrícula: <b>{matricula}</b></p>
+                        <p className="matricula">Matrícula: <b>{usuario.matricula}</b></p>
                     </div>
 
                     <div className="card menu-opcoes">
@@ -301,13 +321,13 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
                             onChange={formatarValor}
                         />
                         <div className="pagamento-botoes">
-                            <button className="btn-mercado-pago" onClick={iniciarPagamento} disabled={loadingPagamento}>
+                            <button className="btn-mercado-pago" onClick={iniciarPagamento} disabled={loading}>
                                 <img src={logoMercadoPago} alt="Mercado Pago" />
-                                {loadingPagamento ? "Aguarde..." : "Mercado Pago"}
+                                {loading ? "Aguarde..." : "Mercado Pago"}
                             </button>
-                            <button className="btn-pix" onClick={iniciarPagamentoPix} disabled={loadingPagamento}>
+                            <button className="btn-pix" onClick={iniciarPagamentoPix} disabled={loading}>
                                 <img src={logoPix} alt="Pix" />
-                                {loadingPagamento ? "Aguarde..." : "Pix"}
+                                {loading ? "Aguarde..." : "Pix"}
                             </button>
                         </div>
 
@@ -340,7 +360,7 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
                                                 {item.descricao} - {item.data.split('-').reverse().join('/')}
                                             </span>
                                             <span className="valor">
-                                                {item.tipo === 'recharge' ? '+' : '-'} R$ {item.valor.toFixed(2)}
+                                                {item.tipo === 'recharge' ? '+' : '-'} R$ {item.valor}
                                             </span>
                                         </li>
                                     ))
@@ -362,11 +382,35 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
                         <h2><span class="material-symbols-outlined">
                             qr_code_scanner
                         </span> QR Code</h2>
-                        <QRCodeCanvas value={matricula} size={250} />
-                        <p className="matricula">Matrícula: <b>{matricula}</b></p>
+                        <QRCodeCanvas value={usuario.matricula} size={250} />
+                        <p className="matricula">Matrícula: <b>{usuario.matricula}</b></p>
                         <button className="fechar" onClick={() => setShowQrModal(false)}>Fechar</button>
                     </div>
                 </div>
+            )}
+
+            {pixData && (
+                <Pix
+                    img={pixData.img}
+                    caminho={pixData.caminho}
+                    statusUrl={pixData.statusUrl}
+                    idPagamento={pixData.id} // 👈 importante!
+                    onConfirm={(valor) => {
+                        toast.success(`R$ ${valor.toFixed(2)} adicionados com sucesso!`);
+                        setPixData(null);
+                        setValorRecarga('');
+                    }}
+                    onClose={() => {
+                        setPixData(null)
+                        toast.error("Transação cancelada.")
+                    }} // ✅ FECHAR MODAL
+                />
+            )}
+
+
+
+            {loading && (
+                <Loading />
             )}
         </div>
 
