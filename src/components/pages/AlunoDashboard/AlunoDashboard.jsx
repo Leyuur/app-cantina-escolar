@@ -3,6 +3,8 @@ import { useState, useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import Login from '../Login/Login';
 import "./AlunoDashboard.css";
+import logoPix from '../../../img/logo-pix.png';
+import logoMercadoPago from '../../../img/logo-mercadopago.png';
 
 export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarga }) {
     const [showRecarga, setShowRecarga] = useState(false);
@@ -24,16 +26,11 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
             const valorRecarga = params.get("recarga");
             if (!isNaN(valorRecarga) && valorRecarga > 0) {
                 setMensagemCredito(`✅ Créditos de R$ ${valorRecarga.toFixed(2)} adicionados com sucesso!`);
-
-                const timeout = setTimeout(() => {
-                    setMensagemCredito('');
-                }, 5000);
-
+                const timeout = setTimeout(() => setMensagemCredito(''), 5000);
                 return () => clearTimeout(timeout);
             }
         }
     }, [recarga]);
-
 
     useEffect(() => {
         const timeout = setTimeout(() => setQrReady(true), 300);
@@ -95,7 +92,7 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
             const response = await fetch('https://lanchouapp.site/server.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ valor: valorNumerico })
+                body: JSON.stringify({ valor: valorNumerico, tipo: 'checkout' })
             });
 
             const data = await response.json();
@@ -112,6 +109,40 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
             setLoadingPagamento(false);
         }
     }
+
+    async function iniciarPagamentoPix() {
+        setLoadingPagamento(true);
+
+        try {
+            const valorNumerico = Number(valorRecarga.replace(/[^\d]+/g, '')) / 100;
+
+            const response = await fetch('https://lanchouapp.site/server.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ valor: valorNumerico, tipo: 'pix' })
+            });
+
+            const data = await response.json();
+
+            if (data.qr_code_base64) {
+                const win = window.open();
+                win.document.write(`
+                    <h2>Escaneie com seu banco:</h2>
+                    <img src="data:image/png;base64,${data.qr_code_base64}" style="width:300px;height:300px;">
+                    <p>Ou copie e cole o código:</p>
+                    <textarea rows="5" style="width:100%">${data.qr_code}</textarea>
+                `);
+            } else {
+                alert("Erro ao gerar QR Code do Pix.");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Erro de conexão com o servidor.");
+        } finally {
+            setLoadingPagamento(false);
+        }
+    }
+
 
     const historico = [
         { tipo: 'recharge', descricao: 'Recarga', valor: 20.0, data: '2025-06-05' },
@@ -176,9 +207,17 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
                             value={valorRecarga}
                             onChange={formatarValor}
                         />
-                        <button className="confirmar" onClick={iniciarPagamento} disabled={loadingPagamento}>
-                            {loadingPagamento ? "Aguarde..." : "Pagar com Mercado Pago"}
-                        </button>
+                        <div className="pagamento-botoes">
+                            <button className="btn-mercado-pago" onClick={iniciarPagamento} disabled={loadingPagamento}>
+                                <img src={logoMercadoPago} alt="Mercado Pago" />
+                                {loadingPagamento ? "Aguarde..." : "Mercado Pago"}
+                            </button>
+                            <button className="btn-pix" onClick={iniciarPagamentoPix} disabled={loadingPagamento}>
+                                <img src={logoPix} alt="Pix" />
+                                {loadingPagamento ? "Aguarde..." : "Pix"}
+                            </button>
+                        </div>
+
                     </div>
 
                     <div className="modal-content static-modal">
@@ -261,9 +300,17 @@ export default function AlunoDashboard({ nome, matricula, saldo, setPage, recarg
                             value={valorRecarga}
                             onChange={formatarValor}
                         />
-                        <button className="confirmar" onClick={iniciarPagamento} disabled={loadingPagamento}>
-                            {loadingPagamento ? "Aguarde..." : "Pagar com Mercado Pago"}
-                        </button>
+                        <div className="pagamento-botoes">
+                            <button className="btn-mercado-pago" onClick={iniciarPagamento} disabled={loadingPagamento}>
+                                <img src={logoMercadoPago} alt="Mercado Pago" />
+                                {loadingPagamento ? "Aguarde..." : "Mercado Pago"}
+                            </button>
+                            <button className="btn-pix" onClick={iniciarPagamentoPix} disabled={loadingPagamento}>
+                                <img src={logoPix} alt="Pix" />
+                                {loadingPagamento ? "Aguarde..." : "Pix"}
+                            </button>
+                        </div>
+
                         <button className="fechar" onClick={() => { setShowRecarga(false); setValorRecarga("") }}>Fechar</button>
                     </div>
                 </div>

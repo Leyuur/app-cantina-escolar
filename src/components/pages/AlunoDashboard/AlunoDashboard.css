@@ -34,6 +34,58 @@ html,
     margin-bottom: 1.5rem;
 }
 
+.pagamento-botoes {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.btn-pix,
+.btn-mercado-pago {
+    flex: 1;
+    min-width: 180px;
+    padding: 0.85rem 1rem;
+    font-weight: bold;
+    font-size: 1rem;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: 0.2s ease;
+}
+
+.btn-pix {
+    background-color: #00B686;
+    color: white;
+}
+
+.btn-pix:hover {
+    background-color: #00a175;
+    box-shadow: none;
+}
+
+.btn-mercado-pago {
+    background-color: #009EE3;
+    color: white;
+}
+
+.btn-mercado-pago:hover {
+    background-color: #008fcc;
+    box-shadow: none;
+}
+
+.btn-pix img,
+.btn-mercado-pago img {
+    height: 50px;
+}
+
+
 .card {
     border: 1px solid #ffe1c1;
     border-radius: 12px;
@@ -121,7 +173,8 @@ html,
     animation: fadeIn 0.3s ease-in-out;
 }
 
-.modal-content h2, .qr-card h2 {
+.modal-content h2,
+.qr-card h2 {
     color: #ff6f00;
     margin-bottom: 1rem;
     text-align: center;
@@ -318,8 +371,15 @@ input[type="date"] {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 
