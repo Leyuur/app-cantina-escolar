@@ -1,21 +1,12 @@
 <?php
 header('Content-Type: application/json');
 include_once "./conexao.php";
+include_once "./log.php";
 
 // Ativar exibição de erros no servidor (para dev)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-
-// Caminho do arquivo de log (na pasta ../logs)
-$logFile = realpath(__DIR__ . '/../logs') . '/log_login.txt';
-
-// Função para escrever logs no arquivo
-function log_to_file($mensagem) {
-    global $logFile;
-    $dataHora = date("Y-m-d H:i:s");
-    file_put_contents($logFile, "[$dataHora] $mensagem" . PHP_EOL, FILE_APPEND);
-}
 
 // Lê o JSON enviado
 $rawInput = file_get_contents("php://input");

@@ -8,7 +8,7 @@ import logoMercadoPago from '../../../img/logo-mercadopago.png';
 import { toast } from 'react-toastify';
 import Loading from '../../tools/Loading/Loading';
 import Pix from '../Pagamento/Pix';
-import { getHistorico } from '../../tools/functions.js';
+import { creditar } from '../../tools/functions.js';
 
 export default function AlunoDashboard({ setPage }) {
     const [showRecarga, setShowRecarga] = useState(false);
@@ -22,18 +22,40 @@ export default function AlunoDashboard({ setPage }) {
     const [loading, setLoading] = useState(false);
     const [pixData, setPixData] = useState(null);
     const [usuario, setUsuario] = useState(null)
+    const [saldo, setSaldo] = useState(0)
+    const [recargaPix, setRecargaPix] = useState(false)
 
 
     const qrRef = useRef(null);
 
     const [searchParams] = useSearchParams();
-    const recarga = searchParams.get("recarga");
+    let recarga = searchParams.get("recarga");
+    if (recargaPix) recarga = recargaPix
 
-    useEffect(() => {
-        if (recarga && !isNaN(recarga) && recarga > 0) {
-            toast.success(`R$ ${parseFloat(recarga).toFixed(2)} em créditos adicionados com sucesso!`);
+    const aplicarCredito = async () => {
+        if (recarga && !isNaN(recarga) && recarga > 0 && usuario) {
+            try {
+                setLoading(true);
+                const recarregado = await creditar(usuario.matricula, recarga);
+                if (recarregado) {
+                    // Atualiza saldo no localStorage
+                    const userAtualizado = { ...usuario, saldo: recarregado };
+                    localStorage.setItem("usuario", JSON.stringify(userAtualizado));
+                    setUsuario(userAtualizado); // atualiza estado também
+                    setSaldo(recarregado); // atualiza estado separado de saldo
+                    toast.success(`R$ ${parseFloat(recarga).toFixed(2)} em créditos adicionados com sucesso!`);
+                } else {
+                    throw new Error("Erro ao adicionar os créditos. Fale com um ADM.");
+                }
+            } catch (error) {
+                console.error(error);
+                toast.error(error.message);
+            } finally {
+                setLoading(false);
+            }
         }
-    }, [recarga]);
+    };
+
 
     useEffect(() => {
         if (!usuario) return;
@@ -156,22 +178,24 @@ export default function AlunoDashboard({ setPage }) {
     useEffect(() => {
         const user = localStorage.getItem("usuario");
         if (user) {
-            setUsuario(JSON.parse(user));
-
-            console.log(user)
+            const parsedUser = JSON.parse(user);
+            setUsuario(parsedUser);
+            setSaldo(parsedUser.saldo); // ✅ usar parsedUser, não usuario
+            console.log(parsedUser);
         } else {
             setPage(<Login setPage={setPage} />);
         }
     }, []);
 
 
+
     // const historico = await getHistorico(usuario)
-    
-    if (!usuario || !historico) return <Loading />;
 
     const historico = [
         { descricao: "teste", data: "12/06/2025" }
     ]
+
+    if (!usuario || !historico) return <Loading />;
 
     const historicoFiltrado = dataFiltro
         ? historico.filter((item) => item.data === dataFiltro)
@@ -197,14 +221,14 @@ export default function AlunoDashboard({ setPage }) {
             {!isMobile && (
                 <div className="desktop-modais" style={{ gridTemplateColumns: "1fr 1fr" }}>
                     <div className="card saldo-card">
-                        <h2><span class="material-symbols-outlined">
+                        <h2><span className="material-symbols-outlined">
                             wallet
                         </span> Saldo atual</h2>
-                        <p className="saldo">R$ {usuario.saldo}</p>
+                        <p className="saldo">R$ {saldo}</p>
                     </div>
 
                     <div className="card qr-card" ref={qrRef}>
-                        <h2><span class="material-symbols-outlined">
+                        <h2><span className="material-symbols-outlined">
                             qr_code_scanner
                         </span> Seu QR Code</h2>
                         {!qrReady ? (
@@ -218,7 +242,7 @@ export default function AlunoDashboard({ setPage }) {
                     </div>
 
                     <div className="modal-content static-modal">
-                        <h2><span class="material-symbols-outlined">
+                        <h2><span className="material-symbols-outlined">
                             payment_arrow_down
                         </span> Recarregar Saldo</h2>
                         <input
@@ -241,7 +265,7 @@ export default function AlunoDashboard({ setPage }) {
                     </div>
 
                     <div className="modal-content static-modal">
-                        <h2><span class="material-symbols-outlined">
+                        <h2><span className="material-symbols-outlined">
                             receipt
                         </span> Histórico de Transações</h2>
                         <input
@@ -281,14 +305,14 @@ export default function AlunoDashboard({ setPage }) {
             {isMobile && (
                 <>
                     <div className="card saldo-card">
-                        <h2><span class="material-symbols-outlined">
+                        <h2><span className="material-symbols-outlined">
                             wallet
                         </span> Saldo atual</h2>
                         <p className="saldo">R$ {usuario.saldo}</p>
                     </div>
 
                     <div className="card qr-card" ref={qrRef}>
-                        <h2><span class="material-symbols-outlined">
+                        <h2><span className="material-symbols-outlined">
                             qr_code_scanner
                         </span> Seu QR Code</h2>
                         {!qrReady ? (
@@ -311,7 +335,7 @@ export default function AlunoDashboard({ setPage }) {
             {isMobile && showRecarga && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <h2><span class="material-symbols-outlined">
+                        <h2><span className="material-symbols-outlined">
                             payment_arrow_down
                         </span> Recarregar Saldo</h2>
                         <input
@@ -339,7 +363,7 @@ export default function AlunoDashboard({ setPage }) {
             {isMobile && showHistorico && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <h2><span class="material-symbols-outlined">
+                        <h2><span className="material-symbols-outlined">
                             receipt
                         </span> Histórico de Transações</h2>
                         <input
@@ -379,7 +403,7 @@ export default function AlunoDashboard({ setPage }) {
             {showQrModal && (
                 <div className="modal-overlay" onClick={() => setShowQrModal(false)}>
                     <div className="modal-content qr-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "400px" }}>
-                        <h2><span class="material-symbols-outlined">
+                        <h2><span className="material-symbols-outlined">
                             qr_code_scanner
                         </span> QR Code</h2>
                         <QRCodeCanvas value={usuario.matricula} size={250} />
@@ -399,6 +423,7 @@ export default function AlunoDashboard({ setPage }) {
                         toast.success(`R$ ${valor.toFixed(2)} adicionados com sucesso!`);
                         setPixData(null);
                         setValorRecarga('');
+                        setRecargaPix(valor)
                     }}
                     onClose={() => {
                         setPixData(null)

@@ -49,3 +49,30 @@ export async function getHistorico(matricula) {
         toast.error(error.message)
     }
 }
+
+export async function creditar(matricula, credito) {
+    try {
+        const response = await fetch('https://lanchouapp.site/endpoints/creditar.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ matricula, credito })
+        });
+
+        const data = await response.json()
+
+        if(!response.ok) {
+            throw new Error("Erro na resposta do servidor.")
+        }
+
+        if(data.success) {
+            return data.saldo
+        } else {
+            return false
+        }
+        
+    } catch (error) {
+        console.error(error)
+        toast.error(error.message)
+        return false
+    }
+}
