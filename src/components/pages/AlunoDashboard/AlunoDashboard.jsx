@@ -23,26 +23,24 @@ export default function AlunoDashboard({ setPage }) {
     const [pixData, setPixData] = useState(null);
     const [usuario, setUsuario] = useState(null)
     const [saldo, setSaldo] = useState(0)
-    const [recargaPix, setRecargaPix] = useState(false)
-
+    const [novoCredito, setNovoCredito] = useState(null)
 
     const qrRef = useRef(null);
 
     const [searchParams] = useSearchParams();
-    let recarga = searchParams.get("recarga");
-    if (recargaPix) recarga = recargaPix
 
-    const aplicarCredito = async () => {
-        if (recarga && !isNaN(recarga) && recarga > 0 && usuario) {
+    const aplicarCredito = async (valorManual = null) => {
+        const recarga = valorManual || searchParams.get("recarga");
+
+        if (recarga && !isNaN(recarga) && recarga > 0) {
             try {
                 setLoading(true);
                 const recarregado = await creditar(usuario.matricula, recarga);
                 if (recarregado) {
-                    // Atualiza saldo no localStorage
                     const userAtualizado = { ...usuario, saldo: recarregado };
                     localStorage.setItem("usuario", JSON.stringify(userAtualizado));
-                    setUsuario(userAtualizado); // atualiza estado também
-                    setSaldo(recarregado); // atualiza estado separado de saldo
+                    setUsuario(userAtualizado);
+                    setSaldo(recarregado);
                     toast.success(`R$ ${parseFloat(recarga).toFixed(2)} em créditos adicionados com sucesso!`);
                 } else {
                     throw new Error("Erro ao adicionar os créditos. Fale com um ADM.");
@@ -55,6 +53,20 @@ export default function AlunoDashboard({ setPage }) {
             }
         }
     };
+
+    useEffect(() => {
+        const recarga = searchParams.get("recarga");
+        if (recarga) setNovoCredito(recarga);
+    }, []);
+
+    useEffect(() => {
+        if (!novoCredito) return;
+        let valor = parseFloat(novoCredito);
+        if (!isNaN(valor) && valor > 0) {
+            aplicarCredito(valor);
+            setNovoCredito(null); // 👈 limpa após usar
+        }
+    }, [novoCredito, searchParams, usuario]);
 
 
     useEffect(() => {
@@ -418,21 +430,17 @@ export default function AlunoDashboard({ setPage }) {
                     img={pixData.img}
                     caminho={pixData.caminho}
                     statusUrl={pixData.statusUrl}
-                    idPagamento={pixData.id} // 👈 importante!
+                    idPagamento={pixData.id}
                     onConfirm={(valor) => {
-                        toast.success(`R$ ${valor.toFixed(2)} adicionados com sucesso!`);
+                        setNovoCredito(valor)
                         setPixData(null);
-                        setValorRecarga('');
-                        setRecargaPix(valor)
                     }}
                     onClose={() => {
-                        setPixData(null)
-                        toast.error("Transação cancelada.")
-                    }} // ✅ FECHAR MODAL
+                        setPixData(null);
+                        toast.error("Transação cancelada.");
+                    }}
                 />
             )}
-
-
 
             {loading && (
                 <Loading />

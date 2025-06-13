@@ -89,7 +89,7 @@ $body = [
     ],
     "back_urls" => [
         "success" => "https://lanchouapp.site/sucesso",
-        "failure" => "https://lanchouapp.site/erro",
+        "failure" => "https://lanchouapp.site/falhou",
         "pending" => "https://lanchouapp.site/pendente"
     ],
     "auto_return" => "approved"

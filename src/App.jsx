@@ -24,17 +24,10 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={page} />
-          <Route path="/dashboard" element={
-            <AlunoDashboard
-              nome={"Yuri"}
-              saldo={8}
-              matricula={"12345"}
-              setPage={setPage}
-            />
-          } />
-          <Route path="/pagamento-sucesso" element={<PagamentoSucesso setPage={setPage} />} />
-          <Route path="/pagamento-falhou" element={<PagamentoFalhou />} />
-          <Route path="/pagamento-pendente" element={<PagamentoPendente />} />
+          <Route path="/dashboard" element={<AlunoDashboard setPage={setPage} />} />
+          <Route path="/sucesso" element={<PagamentoSucesso setPage={setPage} />} />
+          <Route path="/falhou" element={<PagamentoFalhou />} />
+          <Route path="/pendente" element={<PagamentoPendente />} />
         </Routes>
       </Router>
       <ToastContainer

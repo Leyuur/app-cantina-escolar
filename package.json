@@ -12,11 +12,12 @@
     "server": "node server.js",
     "start": "concurrently \"npm run server\" \"npm run client\""
   },
-  "homepage": "https://leyuur.github.io/app-cantina-escolar",
+  "homepage": ".",
   "dependencies": {
     "@tailwindcss/vite": "^4.1.8",
     "cors": "^2.8.5",
     "express": "^5.1.0",
+    "framer-motion": "^12.18.1",
     "html5-qrcode": "^2.3.8",
     "mercadopago": "^2.7.0",
     "qrcode.react": "^4.2.0",

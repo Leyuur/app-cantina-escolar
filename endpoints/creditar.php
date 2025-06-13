@@ -10,7 +10,7 @@ error_reporting(E_ALL);
 
 // Lê o JSON enviado
 $rawInput = file_get_contents("php://input");
-log_to_file("Raw input recebido: " . $rawInput);
+log_to_file("Raw input recebido: " . $rawInput, "pagamentos");
 
 $input = json_decode($rawInput, true);
 
@@ -20,13 +20,13 @@ if (isset($input["credito"]) && isset($input["matricula"])) {
     $credito = floatval($input["credito"]);  // Garantir que é número
     $matricula = $input["matricula"];
 
-    log_to_file("Tentando adicionar saldo de R$ $credito para usuário $matricula.");
+    log_to_file("Tentando adicionar saldo de R$ $credito para usuário $matricula.", "pagamentos");
 
     $sql = "SELECT * FROM usuarios WHERE matricula = ?";
     $stmt = $conn->prepare($sql);
 
     if (!$stmt) {
-        log_to_file("Erro ao preparar statement: " . $conn->error);
+        log_to_file("Erro ao preparar statement: " . $conn->error, "pagamentos");
     }
 
     $stmt->bind_param("s", $matricula);
@@ -54,21 +54,21 @@ if (isset($input["credito"]) && isset($input["matricula"])) {
                     $response["adm"] = true;
                 }
 
-                log_to_file("Saldo atualizado com sucesso para $matricula. Novo saldo: R$ $novoSaldo.");
+                log_to_file("Saldo atualizado com sucesso para $matricula. Novo saldo: R$ $novoSaldo.", "pagamentos");
             } else {
-                log_to_file("Erro ao atualizar saldo: " . $updateStmt->error);
+                log_to_file("Erro ao atualizar saldo: " . $updateStmt->error, "pagamentos");
             }
             $updateStmt->close();
         } else {
-            log_to_file("Erro ao preparar update: " . $conn->error);
+            log_to_file("Erro ao preparar update: " . $conn->error, "pagamentos");
         }
     } else {
-        log_to_file("Usuário não encontrado com matrícula: $matricula.");
+        log_to_file("Usuário não encontrado com matrícula: $matricula.", "pagamentos");
     }
 
     $stmt->close();
 } else {
-    log_to_file("Parâmetros ausentes no JSON: " . json_encode($input));
+    log_to_file("Parâmetros ausentes no JSON: " . json_encode($input), "pagamentos");
 }
 
 echo json_encode($response);

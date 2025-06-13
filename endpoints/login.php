@@ -10,7 +10,7 @@ error_reporting(E_ALL);
 
 // Lê o JSON enviado
 $rawInput = file_get_contents("php://input");
-log_to_file("Raw input recebido: " . $rawInput);
+log_to_file("Raw input recebido: " . $rawInput, "login");
 
 $input = json_decode($rawInput, true);
 
@@ -20,13 +20,13 @@ if (isset($input["user"]) && isset($input["senha"])) {
     $user = $input["user"];
     $senha = $input["senha"];
 
-    log_to_file("Tentando login com: user=$user, senha=$senha");
+    log_to_file("Tentando login com: user=$user, senha=$senha", "login");
 
     $sql = "SELECT * FROM usuarios WHERE matricula = ? AND senha = ?";
     $stmt = $conn->prepare($sql);
 
     if (!$stmt) {
-        log_to_file("Erro ao preparar statement: " . $conn->error);
+        log_to_file("Erro ao preparar statement: " . $conn->error, "login");
     }
 
     $stmt->bind_param("ss", $user, $senha);
@@ -47,14 +47,14 @@ if (isset($input["user"]) && isset($input["senha"])) {
             $response["adm"] = true;
         }
 
-        log_to_file("Login bem-sucedido para $user");
+        log_to_file("Login bem-sucedido para $user", "login");
     } else {
-        log_to_file("Login falhou: usuário ou senha incorretos.");
+        log_to_file("Login falhou: usuário ou senha incorretos.", "login");
     }
 
     $stmt->close();
 } else {
-    log_to_file("Parâmetros ausentes no JSON: " . json_encode($input));
+    log_to_file("Parâmetros ausentes no JSON: " . json_encode($input), "login");
 }
 
 echo json_encode($response);
