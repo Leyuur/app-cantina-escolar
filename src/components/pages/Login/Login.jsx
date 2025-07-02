@@ -5,6 +5,8 @@ import "./Login.css";
 import { toast } from "react-toastify";
 import Loading from "../../tools/Loading/Loading";
 import { verificarUsuario } from "../../tools/functions";
+import logoLanchouLaranja from '../../../img/LANCHOU APP LARANJA.png'
+import FuncDashboard from "../FuncDashboard/FuncDashboard";
 
 export default function Login({ setPage }) {
   const [user, setUser] = useState("");
@@ -13,9 +15,10 @@ export default function Login({ setPage }) {
   const [loading, setLoading] = useState(false)
 
   const onSubmit = async (e) => {
+
     e.preventDefault();
 
-    if(user == "" || pass == "") {
+    if (user == "" || pass == "") {
       toast.error("Você deve digitar algo.")
       return false
     }
@@ -24,14 +27,16 @@ export default function Login({ setPage }) {
     setLoading(false)
 
     if (login.adm) {
-      localStorage.setItem("adm", login.nome)
       setPage(
-        <AdmDashboard setPage={setPage}/>)
-    } else if (login && !login.adm) {
+        <AdmDashboard setPage={setPage} nomeAdmin={login.nome} />)
+    } else if (login.funcionario) {
+      setPage(
+        <FuncDashboard setPage={setPage} nomeFunc={login.nome} />)
+    } else if (login && !login.adm && !login.funcionario) {
       localStorage.setItem("usuario", JSON.stringify(login))
       console.log(login)
       setPage(
-        <AlunoDashboard setPage={setPage}/>
+        <AlunoDashboard setPage={setPage} />
       )
     } else {
       toast.error("Matrícula ou senha inválida")
@@ -51,8 +56,7 @@ export default function Login({ setPage }) {
   return (
     <main className="login-wrapper" role="main" aria-label="Formulário de login">
       <header className="login-titulo">
-        <span className="emoji">🍔</span>
-        <h2>Lanchou App</h2>
+        <img className="logo-lanchou" src={logoLanchouLaranja} alt="Logo Lanchou"></img>
         <p>Bem-vindo de volta!</p>
       </header>
 
@@ -125,7 +129,7 @@ export default function Login({ setPage }) {
 
         <button type="submit">Entrar</button>
       </form>
-      <footer>Made by <a href="" style={{ color: "#ff6f00" }}>Yuri Duarte</a></footer>
+      <footer>Made by <a href="https://www.instagram.com/leyuur_/" target="_blank" style={{ color: "#ff6f00" }}>Yuri Duarte</a></footer>
 
       {loading && (
         <Loading />

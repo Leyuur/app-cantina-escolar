@@ -20,10 +20,8 @@ html,
   animation: fadeDown 0.5s ease;
 }
 
-.login-titulo .emoji {
-  font-size: 2.5rem;
-  display: block;
-  margin-bottom: 0.3rem;
+.login-titulo .logo-lanchou {
+  width: 150px;
 }
 
 .login-titulo h2 {

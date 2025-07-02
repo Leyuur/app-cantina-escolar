@@ -1,0 +1,383 @@
+import { useState, useEffect, useRef } from 'react';
+import './FuncDashboard.css';
+import Login from '../Login/Login';
+import { Html5QrcodeScanner } from 'html5-qrcode';
+import logoLanchouLaranja from '../../../img/LANCHOU APP LARANJA.png'
+import { toast } from 'react-toastify';
+import Loading from '../../tools/Loading/Loading';
+
+export default function FuncDashboard({ nomeFunc, setPage }) {
+    const [historico, setHistorico] = useState([]);
+    const [showHistorico, setShowHistorico] = useState(false);
+    const [showDesconto, setShowDesconto] = useState(false);
+    const [showQrModal, setShowQrModal] = useState(false);
+    const [confirmarDescontoModal, setConfirmarDescontoModal] = useState(false);
+    const [matricula, setMatricula] = useState('');
+    const [dataFiltro, setDataFiltro] = useState('');
+    const [descricao, setDescricao] = useState('');
+    const [carregandoHistorico, setCarregandoHistorico] = useState(false);
+    const [qrError, setQrError] = useState('');
+    const [valorDesconto, setValorDesconto] = useState('');
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const qrRef = useRef(null);
+    const [totalAlunos, setTotalAlunos] = useState(0);
+    const [saldoTotal, setSaldoTotal] = useState(0.0);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        async function buscarResumo() {
+            try {
+                const res = await fetch('https://lanchouapp.site/endpoints/resumo_dashboard.php');
+                const data = await res.json();
+                if (!data.error) {
+                    setTotalAlunos(data.totalAlunos);
+                    setSaldoTotal(data.saldoTotal);
+                } else {
+                    console.error(data.error);
+                }
+            } catch (err) {
+                console.error('Erro ao buscar resumo:', err);
+            }
+        }
+
+        buscarResumo();
+    }, []);
+
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        if (showQrModal) {
+            const scanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 });
+            scanner.render(
+                (decodedText) => {
+                    setMatricula(decodedText);
+                    setShowQrModal(false);
+                    setQrError('');
+                    scanner.clear();
+                },
+                (errorMessage) => {
+                    console.warn(errorMessage);
+                }
+            );
+            return () => {
+                scanner.clear().catch(() => { });
+            };
+        }
+    }, [showQrModal]);
+
+    async function carregarHistorico() {
+        try {
+            const res = await fetch("https://lanchouapp.site/endpoints/listar_compras.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ "todasCompras": true })
+            });
+            const data = await res.json();
+            setHistorico(data);
+        } catch (err) {
+            console.error("Erro ao carregar histórico:", err);
+        }
+    }
+
+    useEffect(() => {
+        carregarHistorico();
+    }, []);
+
+
+    const historicoFiltrado = dataFiltro
+        ? historico.filter((item) => item.data === dataFiltro)
+        : historico;
+
+    function aplicarFiltroData(novaData) {
+        setDataFiltro(novaData);
+        setCarregandoHistorico(true);
+        setTimeout(() => setCarregandoHistorico(false), 600);
+    }
+
+    function formatarValor(e) {
+        let valor = e.target.value.replace(/\D/g, '');
+        valor = (Number(valor) / 100).toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+        });
+        setValorDesconto(valor);
+    }
+
+    return (
+        <div className="dashboard-container">
+            <button className="btn-sair" onClick={() => {
+                localStorage.removeItem("usuario")
+                localStorage.removeItem("adm")
+                setPage(<Login setPage={setPage} />)
+            }}>
+                <span className="material-icons">logout</span> Sair
+            </button>
+
+            <header className="dashboard-header">
+                <img className="logo-lanchou" src={logoLanchouLaranja}></img>
+                <h2>Painel da Cantina</h2>
+                <p>Olá, <strong>{nomeFunc}</strong>!</p>
+            </header>
+
+            <div className="card resumo-card" style={{ marginBottom: "1rem" }}>
+                <h3><span className="material-icons">bar_chart</span> Resumo</h3>
+                <p>Total de alunos: <b>{totalAlunos}</b></p>
+                <p>Saldo total circulante: <b>R$ {saldoTotal.toFixed(2).replace('.', ',')}</b></p>
+            </div>
+
+
+            {isMobile && (
+                <div className="card menu-opcoes">
+                    <button onClick={() => setShowDesconto(true)}>Descontar Saldo</button>
+                    <button onClick={() => setShowHistorico(true)}>Ver Histórico Geral</button>
+                </div>
+            )}
+
+            {!isMobile && (
+                <div className="desktop-modais" style={{ gridTemplateColumns: "1fr 1fr" }}>
+
+                    {(isMobile ? showDesconto : true) && (
+                        <div className="modal-content static-modal">
+                            <h2><span className="material-icons">remove_circle_outline</span> Descontar Saldo</h2>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Matrícula do aluno"
+                                    value={matricula}
+                                    onChange={(e) => setMatricula(e.target.value)}
+                                />
+                                <button onClick={() => setShowQrModal(true)}>
+                                    <span className="material-icons">qr_code_scanner</span> Ler QR Code
+                                </button>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Valor (R$)"
+                                value={valorDesconto}
+                                onChange={formatarValor}
+                            />
+                            <input
+                                type="text"
+                                placeholder="Descrição da compra"
+                                value={descricao}
+                                onChange={(e) => setDescricao(e.target.value)}
+                            />
+                            <button
+                                className="confirmar"
+                                onClick={() => {
+                                    if (matricula && valorDesconto && descricao) {
+                                        setConfirmarDescontoModal(true);
+                                    } else {
+                                        toast.error("Você deve preencher todos os campos.")
+                                    }
+                                }}
+                            >
+                                Confirmar Desconto
+                            </button>
+
+                        </div>
+                    )}
+
+                    {(isMobile ? showHistorico : true) && (
+                        <div className="modal-content static-modal">
+                            <h2><span className="material-icons">receipt_long</span> Histórico de Transações</h2>
+                            <input
+                                type="date"
+                                className="input-data-filtro"
+                                value={dataFiltro}
+                                onChange={(e) => aplicarFiltroData(e.target.value)}
+                            />
+                            {carregandoHistorico ? (
+                                <div className="loading-transacoes"></div>
+                            ) : (
+                                <ul className="historico-lista">
+                                    {historicoFiltrado.length > 0 ? (
+                                        historicoFiltrado.map((item, index) => (
+                                            <li className={`transacao ${item.tipo} tooltip`} key={index}>
+                                                <span className="tooltip-text"><b>Id da transação:</b> {item.id}<br /><b>Usuário:</b> {item.matricula}</span>
+                                                {item.tipo === 'Recarga' ? '🟢' : '🔴'}
+                                                <span className="descricao">{item.descricao} - {item.data.split('-').reverse().join('/')}</span>
+                                                <span className="valor">
+                                                    {item.tipo === 'Recarga' ? '+' : '-'} R$ {Math.abs(parseFloat(item.valor)).toFixed(2).replace('.', ',')}
+                                                </span>
+
+                                            </li>
+                                        ))
+                                    ) : (
+                                        <li style={{ padding: '1rem', textAlign: 'center', color: '#999' }}>
+                                            Nenhuma transação encontrada.
+                                        </li>
+                                    )}
+                                </ul>
+                            )}
+
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {isMobile && (showDesconto || showHistorico) && (
+                <>
+                    {showDesconto && (
+                        <div className="modal-overlay">
+                            <div className="modal-content static-modal">
+                                <h2><span className="material-icons">remove_circle_outline</span> Descontar Saldo</h2>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <input
+                                        type="text"
+                                        placeholder="Matrícula do aluno"
+                                        value={matricula}
+                                        onChange={(e) => setMatricula(e.target.value)}
+                                    />
+                                    <button onClick={() => setShowQrModal(true)}>
+                                        <span className="material-icons">qr_code_scanner</span> Ler QR Code
+                                    </button>
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Valor (R$)"
+                                    value={valorDesconto}
+                                    onChange={formatarValor}
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Descrição da compra"
+                                    value={descricao}
+                                    onChange={(e) => setDescricao(e.target.value)}
+                                />
+                                <button
+                                    className="confirmar"
+                                    onClick={() => {
+                                        if (matricula && valorDesconto && descricao) {
+                                            setConfirmarDescontoModal(true);
+                                        } else {
+                                            toast.error("Você deve preencher todos os campos.")
+                                        }
+                                    }}
+                                >
+                                    Confirmar Desconto
+                                </button>
+
+                                <button className="fechar" onClick={() => setShowDesconto(false)}>Fechar</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {showHistorico && (
+                        <div className="modal-overlay">
+                            <div className="modal-content static-modal">
+                                <h2><span className="material-icons">receipt_long</span> Histórico de Transações</h2>
+                                <input
+                                    type="date"
+                                    className="input-data-filtro"
+                                    value={dataFiltro}
+                                    onChange={(e) => aplicarFiltroData(e.target.value)}
+                                />
+                                {carregandoHistorico ? (
+                                    <div className="loading-transacoes"></div>
+                                ) : (
+                                    <ul className="historico-lista">
+                                        {historicoFiltrado.length > 0 ? (
+                                            historicoFiltrado.map((item, index) => (
+                                                <li className={`transacao ${item.tipo} tooltip`} key={index}>
+                                                    <span className="tooltip-text"><b>Id da transação:</b> {item.id}<br /><b>Usuário:</b> {item.matricula}</span>
+                                                    {item.tipo === 'Recarga' ? '🟢' : '🔴'}
+                                                    <span className="descricao">{item.descricao} - {item.data.split('-').reverse().join('/')}</span>
+                                                    <span className="valor">
+                                                        {item.tipo === 'Recarga' ? '+' : '-'} R$ {Math.abs(parseFloat(item.valor)).toFixed(2).replace('.', ',')}
+                                                    </span>
+
+                                                </li>
+                                            ))
+                                        ) : (
+                                            <li style={{ padding: '1rem', textAlign: 'center', color: '#999' }}>
+                                                Nenhuma transação encontrada.
+                                            </li>
+                                        )}
+                                    </ul>
+                                )}
+                                <button className="fechar" onClick={() => setShowHistorico(false)}>Fechar</button>
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
+
+            {showQrModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ maxWidth: "400px" }}>
+                        <h2><span className="material-icons">qr_code_scanner</span> Leitor de QR Code</h2>
+                        <div id="qr-reader" ref={qrRef} style={{ width: '100%' }}></div>
+                        <button className="fechar qrcode-fechar" onClick={() => {
+                            setShowQrModal(false);
+                            setQrError('');
+                        }}>Fechar</button>
+                    </div>
+                </div>
+            )}
+
+            {confirmarDescontoModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ maxWidth: "400px" }}>
+                        <h3>Confirmar Desconto</h3>
+                        <p>Tem certeza que deseja descontar <b>{valorDesconto}</b> do aluno com matrícula <b>{matricula}</b>?</p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem' }}>
+                            <button className="confirmar" onClick={async () => {
+                                const valorNumero = parseFloat(valorDesconto.replace(/\D/g, '')) / 100;
+                                try {
+                                    setLoading(true)
+                                    const res = await fetch("https://lanchouapp.site/endpoints/creditar.php", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({
+                                            matricula,
+                                            credito: -valorNumero,
+                                            descricao
+                                        })
+                                    });
+                                    const data = await res.json();
+                                    if (data.success) {
+                                        toast.success(`${valorDesconto} descontado de ${matricula} com sucesso!`);
+                                        setDescricao("")
+                                        setMatricula("")
+                                        setValorDesconto("")
+                                        await carregarHistorico();
+                                    } else if (data.error) {
+                                        throw new Error(data.error)
+                                    } else {
+                                        throw new Error("Erro ao aplicar desconto.");
+                                    }
+                                } catch (error) {
+                                    console.error("Erro:", error);
+                                    toast.error(error.message);
+                                } finally {
+                                    setLoading(false)
+                                }
+                                setConfirmarDescontoModal(false);
+                            }}>
+                                Confirmar
+                            </button>
+                            <button className="fechar" onClick={() => {
+                                setDescricao("")
+                                setMatricula("")
+                                setValorDesconto("")
+                                setConfirmarDescontoModal(false)
+                            }
+                            } style={{ marginLeft: "5px" }}>Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {loading && (
+                <Loading />
+            )}
+
+        </div>
+    );
+}

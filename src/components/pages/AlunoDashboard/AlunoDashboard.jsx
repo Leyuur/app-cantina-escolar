@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import Loading from '../../tools/Loading/Loading';
 import Pix from '../Pagamento/Pix';
 import { creditar } from '../../tools/functions.js';
+import logoLanchouLaranja from '../../../img/LANCHOU APP LARANJA.png'
 
 export default function AlunoDashboard({ setPage }) {
     const [showRecarga, setShowRecarga] = useState(false);
@@ -24,6 +25,8 @@ export default function AlunoDashboard({ setPage }) {
     const [usuario, setUsuario] = useState(null)
     const [saldo, setSaldo] = useState(0)
     const [novoCredito, setNovoCredito] = useState(null)
+    const [showCartao, setShowCartao] = useState(false);
+    const [historico, setHistorico] = useState([]);
 
     const qrRef = useRef(null);
 
@@ -41,6 +44,7 @@ export default function AlunoDashboard({ setPage }) {
                     localStorage.setItem("usuario", JSON.stringify(userAtualizado));
                     setUsuario(userAtualizado);
                     setSaldo(recarregado);
+                    setValorRecarga("")
                     toast.success(`R$ ${parseFloat(recarga).toFixed(2)} em créditos adicionados com sucesso!`);
                 } else {
                     throw new Error("Erro ao adicionar os créditos. Fale com um ADM.");
@@ -64,15 +68,28 @@ export default function AlunoDashboard({ setPage }) {
         let valor = parseFloat(novoCredito);
         if (!isNaN(valor) && valor > 0) {
             aplicarCredito(valor);
-            setNovoCredito(null); // 👈 limpa após usar
+            setNovoCredito(null);
         }
     }, [novoCredito, searchParams, usuario]);
 
-
     useEffect(() => {
         if (!usuario) return;
-        const timeout = setTimeout(() => setQrReady(true), 300);
-        return () => clearTimeout(timeout);
+
+        const carregarHistorico = async () => {
+            try {
+                const res = await fetch("https://lanchouapp.site/endpoints/listar_compras.php", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ matricula: usuario.matricula })
+                });
+                const data = await res.json();
+                setHistorico(data);
+            } catch (err) {
+                console.error("Erro ao carregar histórico:", err);
+            }
+        };
+
+        carregarHistorico();
     }, [usuario]);
 
 
@@ -91,14 +108,11 @@ export default function AlunoDashboard({ setPage }) {
     }, [isMobile]);
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            if (qrRef.current?.querySelector('canvas')) {
-                setQrReady(true);
-                clearInterval(interval);
-            }
-        }, 100);
-        return () => clearInterval(interval);
+        if (usuario) {
+            setQrReady(true);
+        }
     }, [usuario]);
+
 
     useEffect(() => {
         if (showHistorico) {
@@ -123,35 +137,161 @@ export default function AlunoDashboard({ setPage }) {
         setValorRecarga(valor);
     }
 
-    async function iniciarPagamento() {
-        setLoading(true);
+    const iniciarPagamento = async () => {
+        if (!showCartao) return;
 
-        try {
-            const valorNumerico = Number(valorRecarga.replace(/[^\d]+/g, '')) / 100;
+        // Clean previous instances
+        document.querySelectorAll('[id^="form-checkout"]').forEach(el => el.remove());
+        document.querySelectorAll('script[src*="mercadopago"]').forEach(el => el.remove());
 
-            if (valorNumerico <= 1) {
-                throw new Error("Você deve inserir um valor acima de R$ 1,00")
-            }
-            const response = await fetch('https://lanchouapp.site/endpoints/server.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ valor: valorNumerico, tipo: 'checkout' })
-            });
-
-            const data = await response.json();
-
-            if (data.init_point) {
-                window.location.href = data.init_point;
-            } else {
-                toast.error("Erro ao iniciar pagamento.");
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error(error.message);
-        } finally {
-            setLoading(false);
+        const valorNumerico = Number(valorRecarga.replace(/[^\d]+/g, '')) / 100;
+        if (valorNumerico <= 1) {
+            toast.error("Você deve inserir um valor acima de R$ 1,00");
+            setShowCartao(false);
+            return;
         }
-    }
+
+        const checkPaymentStatus = async (id) => {
+            try {
+                const response = await fetch(`https://lanchouapp.site/endpoints/status.php?id=${id}`);
+                const data = await response.json();
+
+                if (data.status === 'approved') {
+                    toast.success("Pagamento aprovado!");
+                    setNovoCredito(valorNumerico);
+                    setShowCartao(false);
+                    clearInterval(pollingInterval.current);
+                } else if (data.status === 'rejected') {
+                    toast.error(`Pagamento recusado: ${data.motivo || 'Motivo desconhecido'}`);
+                    clearInterval(pollingInterval.current);
+                    setLoading(false);
+                }
+            } catch (error) {
+                console.error('Error checking payment status:', error);
+                clearInterval(pollingInterval.current);
+                setLoading(false);
+            }
+        };
+
+        const pollingInterval = useRef(null);
+
+        const script = document.createElement("script");
+        script.src = "https://sdk.mercadopago.com/js/v2";
+
+        script.onload = async () => {
+            try {
+                const mp = new window.MercadoPago("APP_USR-c90a2f9e-b93b-4221-833b-e7adba2b9750", {
+                    locale: "pt-BR",
+                    advancedFraudPrevention: true
+                });
+
+                const cardForm = mp.cardForm({
+                    amount: valorNumerico.toString(),
+                    autoMount: true,
+                    form: {
+                        id: "form-checkout",
+                        cardholderName: {
+                            id: "form-checkout__cardholderName",
+                            placeholder: "Nome no cartão"
+                        },
+                        cardholderEmail: {
+                            id: "form-checkout__cardholderEmail",
+                            placeholder: "E-mail"
+                        },
+                        cardNumber: {
+                            id: "form-checkout__cardNumber",
+                            placeholder: "Número do cartão"
+                        },
+                        expirationDate: {
+                            id: "form-checkout__expirationDate",
+                            placeholder: "MM/AA"
+                        },
+                        securityCode: {
+                            id: "form-checkout__securityCode",
+                            placeholder: "CVV"
+                        },
+                        installments: {
+                            id: "form-checkout__installments",
+                            placeholder: "Parcelas"
+                        },
+                        identificationType: {
+                            id: "form-checkout__identificationType",
+                            placeholder: "Tipo documento"
+                        },
+                        identificationNumber: {
+                            id: "form-checkout__identificationNumber",
+                            placeholder: "Número documento"
+                        },
+                        issuer: {
+                            id: "form-checkout__issuer",
+                            placeholder: "Banco emissor"
+                        },
+                    },
+                    callbacks: {
+                        onFormMounted: error => {
+                            if (error) {
+                                console.error('Form mount error:', error);
+                                toast.error("Erro ao configurar o formulário");
+                                return;
+                            }
+                        },
+                        onSubmit: async (event) => {
+                            event.preventDefault();
+                            setLoading(true);
+                            toast.info("Processando pagamento...");
+
+                            try {
+                                const formData = cardForm.getCardFormData();
+                                const response = await fetch("https://lanchouapp.site/endpoints/server.php", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                        tipo: "cartao",
+                                        valor: valorNumerico,
+                                        ...formData
+                                    })
+                                });
+
+                                const data = await response.json();
+
+                                if (data.id) {
+                                    pollingInterval.current = setInterval(() => {
+                                        checkPaymentStatus(data.id);
+                                    }, 3000);
+                                } else {
+                                    throw new Error("Pagamento não iniciado corretamente");
+                                }
+                            } catch (err) {
+                                console.error('Payment error:', err);
+                                toast.error("Erro ao processar pagamento");
+                                setLoading(false);
+                            }
+                        },
+                        onError: (error) => {
+                            console.error('MercadoPago error:', error);
+                            toast.error(`Erro: ${error.message || 'Erro no pagamento'}`);
+                            setLoading(false);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Initialization error:', error);
+                toast.error("Falha ao iniciar pagamento");
+            }
+        };
+
+        script.onerror = () => {
+            toast.error("Falha ao carregar serviço de pagamentos");
+        };
+
+        document.body.appendChild(script);
+
+        return () => {
+            if (pollingInterval.current) {
+                clearInterval(pollingInterval.current);
+            }
+        };
+    };
 
     async function iniciarPagamentoPix() {
         setLoading(true);
@@ -192,20 +332,12 @@ export default function AlunoDashboard({ setPage }) {
         if (user) {
             const parsedUser = JSON.parse(user);
             setUsuario(parsedUser);
-            setSaldo(parsedUser.saldo); // ✅ usar parsedUser, não usuario
+            setSaldo(parsedUser.saldo);
             console.log(parsedUser);
         } else {
             setPage(<Login setPage={setPage} />);
         }
     }, []);
-
-
-
-    // const historico = await getHistorico(usuario)
-
-    const historico = [
-        { descricao: "teste", data: "12/06/2025" }
-    ]
 
     if (!usuario || !historico) return <Loading />;
 
@@ -215,34 +347,28 @@ export default function AlunoDashboard({ setPage }) {
 
     return (
         <div className="dashboard-container">
-
             <button className="btn-sair" onClick={() => {
-                localStorage.removeItem("usuario")
-                setPage(<Login setPage={setPage} />)
-                toast.error("Deslogado com sucesso!")
+                localStorage.removeItem("usuario");
+                setPage(<Login setPage={setPage} />);
+                toast.error("Deslogado com sucesso!");
             }}>
                 <span className="material-icons">logout</span> Sair
             </button>
 
             <header className="dashboard-header">
-                <span className="emoji">🍔</span>
-                <h2>Lanchou App</h2>
+                <img className="logo-lanchou" src={logoLanchouLaranja} alt='Logo Lanchou'></img>
                 <p>Olá, <strong>{usuario.nome}</strong>!</p>
             </header>
 
             {!isMobile && (
                 <div className="desktop-modais" style={{ gridTemplateColumns: "1fr 1fr" }}>
                     <div className="card saldo-card">
-                        <h2><span className="material-symbols-outlined">
-                            wallet
-                        </span> Saldo atual</h2>
-                        <p className="saldo">R$ {saldo}</p>
+                        <h2><span className="material-symbols-outlined">wallet</span> Saldo atual</h2>
+                        <p className="saldo">R$ {saldo.toFixed(2)}</p>
                     </div>
 
                     <div className="card qr-card" ref={qrRef}>
-                        <h2><span className="material-symbols-outlined">
-                            qr_code_scanner
-                        </span> Seu QR Code</h2>
+                        <h2><span className="material-symbols-outlined">qr_code_scanner</span> Seu QR Code</h2>
                         {!qrReady ? (
                             <div className="qr-loading-spinner"></div>
                         ) : (
@@ -254,9 +380,7 @@ export default function AlunoDashboard({ setPage }) {
                     </div>
 
                     <div className="modal-content static-modal">
-                        <h2><span className="material-symbols-outlined">
-                            payment_arrow_down
-                        </span> Recarregar Saldo</h2>
+                        <h2><span className="material-symbols-outlined">payment_arrow_down</span> Recarregar Saldo</h2>
                         <input
                             type="text"
                             placeholder="Valor em R$"
@@ -264,22 +388,19 @@ export default function AlunoDashboard({ setPage }) {
                             onChange={formatarValor}
                         />
                         <div className="pagamento-botoes">
-                            <button className="btn-mercado-pago" onClick={iniciarPagamento} disabled={loading}>
-                                <img src={logoMercadoPago} alt="Mercado Pago" />
-                                MercadoPago
-                            </button>
+                            {/* <button className="btn-cartao" onClick={() => setShowCartao(true)} disabled={loading}>
+                                <span className="material-icons">credit_card</span> Cartão de Crédito
+                            </button> */}
+
                             <button className="btn-pix" onClick={iniciarPagamentoPix} disabled={loading}>
                                 <img src={logoPix} alt="Pix" />
                                 Pix
                             </button>
                         </div>
-
                     </div>
 
                     <div className="modal-content static-modal">
-                        <h2><span className="material-symbols-outlined">
-                            receipt
-                        </span> Histórico de Transações</h2>
+                        <h2><span className="material-symbols-outlined">receipt</span> Histórico de Transações</h2>
                         <input
                             type="date"
                             className="input-data-filtro"
@@ -292,13 +413,14 @@ export default function AlunoDashboard({ setPage }) {
                             <ul className="historico-lista">
                                 {historicoFiltrado.length > 0 ? (
                                     historicoFiltrado.map((item, index) => (
-                                        <li className={`transacao ${item.tipo}`} key={index}>
-                                            <span className="transacao-icon">{item.tipo === 'recharge' ? '🟢' : '🔴'}</span>
+                                        <li className={`transacao ${item.tipo} tooltip`} key={index}>
+                                            <span className="tooltip-text"><b>Id da compra:</b> {item.id}</span>
+                                            <span className="transacao-icon">{item.tipo === 'Recarga' ? '🟢' : '🔴'}</span>
                                             <span className="descricao">
                                                 {item.descricao} - {item.data.split('-').reverse().join('/')}
                                             </span>
                                             <span className="valor">
-                                                {item.tipo === 'recharge' ? '+' : '-'} R$ {item.valor}
+                                                {item.tipo === 'Recarga' ? '+' : '-'} R$ {Math.abs(parseFloat(item.valor)).toFixed(2).replace('.', ',')}
                                             </span>
                                         </li>
                                     ))
@@ -313,20 +435,15 @@ export default function AlunoDashboard({ setPage }) {
                 </div>
             )}
 
-            {/* MOBILE */}
             {isMobile && (
                 <>
                     <div className="card saldo-card">
-                        <h2><span className="material-symbols-outlined">
-                            wallet
-                        </span> Saldo atual</h2>
+                        <h2><span className="material-symbols-outlined">wallet</span> Saldo atual</h2>
                         <p className="saldo">R$ {usuario.saldo}</p>
                     </div>
 
                     <div className="card qr-card" ref={qrRef}>
-                        <h2><span className="material-symbols-outlined">
-                            qr_code_scanner
-                        </span> Seu QR Code</h2>
+                        <h2><span className="material-symbols-outlined">qr_code_scanner</span> Seu QR Code</h2>
                         {!qrReady ? (
                             <div className="qr-loading-spinner"></div>
                         ) : (
@@ -347,9 +464,7 @@ export default function AlunoDashboard({ setPage }) {
             {isMobile && showRecarga && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <h2><span className="material-symbols-outlined">
-                            payment_arrow_down
-                        </span> Recarregar Saldo</h2>
+                        <h2><span className="material-symbols-outlined">payment_arrow_down</span> Recarregar Saldo</h2>
                         <input
                             type="text"
                             placeholder="Valor em R$"
@@ -357,10 +472,10 @@ export default function AlunoDashboard({ setPage }) {
                             onChange={formatarValor}
                         />
                         <div className="pagamento-botoes">
-                            <button className="btn-mercado-pago" onClick={iniciarPagamento} disabled={loading}>
-                                <img src={logoMercadoPago} alt="Mercado Pago" />
-                                {loading ? "Aguarde..." : "Mercado Pago"}
-                            </button>
+                            {/* <button className="btn-cartao" onClick={() => setShowCartao(true)} disabled={loading}>
+                                <span className="material-icons">credit_card</span> Cartão de Crédito
+                            </button> */}
+
                             <button className="btn-pix" onClick={iniciarPagamentoPix} disabled={loading}>
                                 <img src={logoPix} alt="Pix" />
                                 {loading ? "Aguarde..." : "Pix"}
@@ -375,9 +490,7 @@ export default function AlunoDashboard({ setPage }) {
             {isMobile && showHistorico && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <h2><span className="material-symbols-outlined">
-                            receipt
-                        </span> Histórico de Transações</h2>
+                        <h2><span className="material-symbols-outlined">receipt</span> Histórico de Transações</h2>
                         <input
                             type="date"
                             className="input-data-filtro"
@@ -390,7 +503,8 @@ export default function AlunoDashboard({ setPage }) {
                             <ul className="historico-lista">
                                 {historicoFiltrado.length > 0 ? (
                                     historicoFiltrado.map((item, index) => (
-                                        <li className={`transacao ${item.tipo}`} key={index}>
+                                        <li className={`transacao ${item.tipo} tooltip`} key={index}>
+                                            <span className="tooltip-text">Id da compra: {item.id}</span>
                                             <span className="transacao-icon">{item.tipo === 'recharge' ? '🟢' : '🔴'}</span>
                                             <span className="descricao">
                                                 {item.descricao} - {item.data.split('-').reverse().join('/')}
@@ -415,9 +529,7 @@ export default function AlunoDashboard({ setPage }) {
             {showQrModal && (
                 <div className="modal-overlay" onClick={() => setShowQrModal(false)}>
                     <div className="modal-content qr-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "400px" }}>
-                        <h2><span className="material-symbols-outlined">
-                            qr_code_scanner
-                        </span> QR Code</h2>
+                        <h2><span className="material-symbols-outlined">qr_code_scanner</span> QR Code</h2>
                         <QRCodeCanvas value={usuario.matricula} size={250} />
                         <p className="matricula">Matrícula: <b>{usuario.matricula}</b></p>
                         <button className="fechar" onClick={() => setShowQrModal(false)}>Fechar</button>
@@ -432,7 +544,7 @@ export default function AlunoDashboard({ setPage }) {
                     statusUrl={pixData.statusUrl}
                     idPagamento={pixData.id}
                     onConfirm={(valor) => {
-                        setNovoCredito(valor)
+                        setNovoCredito(valor);
                         setPixData(null);
                     }}
                     onClose={() => {
@@ -442,10 +554,31 @@ export default function AlunoDashboard({ setPage }) {
                 />
             )}
 
-            {loading && (
-                <Loading />
+            {showCartao && (
+                <div className="modal-overlay">
+                    <div className="modal-content modal-cartao">
+                        <h2><span className="material-symbols-outlined">credit_card</span> Cartão de Crédito</h2>
+                        <form id="form-checkout">
+                            <input type="text" id="form-checkout__cardholderName" placeholder="Nome impresso no cartão" />
+                            <input type="email" id="form-checkout__cardholderEmail" placeholder="E-mail" />
+                            <input type="text" id="form-checkout__cardNumber" placeholder="Número do cartão" />
+                            <input type="text" id="form-checkout__expirationDate" placeholder="Data de expiração (MM/AA)" />
+                            <input type="text" id="form-checkout__securityCode" placeholder="Código de segurança" />
+                            <select id="form-checkout__installments"></select>
+                            <select id="form-checkout__identificationType"></select>
+                            <input type="text" id="form-checkout__identificationNumber" placeholder="CPF" />
+                            <select id="form-checkout__issuer"></select>
+                            <button type="submit" className="confirmar" onClick={(e) => {
+                                e.preventDefault();
+                                iniciarPagamento();
+                            }}>Pagar</button>
+                        </form>
+                        <button className="fechar" onClick={() => setShowCartao(false)}>Fechar</button>
+                    </div>
+                </div>
             )}
-        </div>
 
+            {loading && <Loading />}
+        </div>
     );
-} ''
+}

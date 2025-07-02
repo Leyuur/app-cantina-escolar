@@ -45,6 +45,8 @@ if (isset($input["user"]) && isset($input["senha"])) {
 
         if ($row["adm"] == 1) {
             $response["adm"] = true;
+        } else if ($row["funcionario"] == 1) {
+            $response["funcionario"] = true;
         }
 
         log_to_file("Login bem-sucedido para $user", "login");

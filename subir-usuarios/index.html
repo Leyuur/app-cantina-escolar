@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upload de Alunos</title>
+    <link rel="icon" href="./LANCHOU APP LARANJA.png">
+    <link rel="stylesheet" href="AlunoDashboard.css" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <div class="container">
+        <div id="logo">
+            <img src="./LANCHOU APP LARANJA.png" alt="Logo Lanchou" id="logo-lanchou">
+        </div>
+
+        <h1>Importar Lista de Alunos</h1>
+        <input type="file" id="arquivo" accept=".xls,.xlsx" />
+        <button class="btn-cartao" onclick="processarPlanilha()">Enviar Planilha</button>
+
+        <h2>Ou cadastre manualmente:</h2>
+        <form id="formManual" onsubmit="cadastrarManual(event)">
+            <input type="text" id="matriculaManual" placeholder="Matrícula" required />
+            <input type="text" id="nomeManual" placeholder="Nome completo" required />
+            <button type="submit">Cadastrar Manualmente</button>
+        </form>
+
+        <h2>Ou cadastre um funcionário:</h2>
+        <form id="formFuncionario" onsubmit="cadastrarFuncionario(event)">
+            <input type="text" id="loginFuncionario" placeholder="Login" required />
+            <input type="text" id="nomeFuncionario" placeholder="Nome completo" required />
+            <input type="password" id="senhaFuncionario" placeholder="Senha" required />
+            <button type="submit">Cadastrar Funcionário</button>
+        </form>
+
+
+        <div id="toast-container"></div>
+
+        <p id="mensagem"></p>
+
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

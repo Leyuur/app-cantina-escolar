@@ -35,8 +35,57 @@
 }
 
 #qr-reader video {
-  transform: scaleX(-1);
+    transform: scaleX(-1);
 }
+
+.tooltip {
+    position: relative;
+    cursor: pointer;
+}
+
+.tooltip .tooltip-text {
+    visibility: hidden;
+    width: max-content;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 8px;
+    padding: 6px 10px;
+    position: absolute;
+    z-index: 1000;
+    bottom: 30%;
+    left: 50%;
+    transform: translate(-50%);
+    opacity: 0;
+    transition: opacity .3s ease, transform .3s ease;
+    font-size: .85rem;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+.logo-lanchou {
+    width: 150px;
+}
+
+.historico-lista {
+    overflow: auto;
+    max-height: 200px;
+}
+
+h3,
+h2,
+h1,
+button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 
 @media screen and (min-width: 769px) {
 
