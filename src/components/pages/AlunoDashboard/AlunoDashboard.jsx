@@ -173,116 +173,116 @@ export default function AlunoDashboard({ setPage }) {
             }
         };
 
-        const pollingInterval = useRef(null);
+        // const pollingInterval = useRef(null);
 
-        const script = document.createElement("script");
-        script.src = "https://sdk.mercadopago.com/js/v2";
+        // const script = document.createElement("script");
+        // script.src = "https://sdk.mercadopago.com/js/v2";
 
-        script.onload = async () => {
-            try {
-                const mp = new window.MercadoPago("APP_USR-c90a2f9e-b93b-4221-833b-e7adba2b9750", {
-                    locale: "pt-BR",
-                    advancedFraudPrevention: true
-                });
+        // script.onload = async () => {
+        //     try {
+        //         const mp = new window.MercadoPago("APP_USR-c90a2f9e-b93b-4221-833b-e7adba2b9750", {
+        //             locale: "pt-BR",
+        //             advancedFraudPrevention: true
+        //         });
 
-                const cardForm = mp.cardForm({
-                    amount: valorNumerico.toString(),
-                    autoMount: true,
-                    form: {
-                        id: "form-checkout",
-                        cardholderName: {
-                            id: "form-checkout__cardholderName",
-                            placeholder: "Nome no cartão"
-                        },
-                        cardholderEmail: {
-                            id: "form-checkout__cardholderEmail",
-                            placeholder: "E-mail"
-                        },
-                        cardNumber: {
-                            id: "form-checkout__cardNumber",
-                            placeholder: "Número do cartão"
-                        },
-                        expirationDate: {
-                            id: "form-checkout__expirationDate",
-                            placeholder: "MM/AA"
-                        },
-                        securityCode: {
-                            id: "form-checkout__securityCode",
-                            placeholder: "CVV"
-                        },
-                        installments: {
-                            id: "form-checkout__installments",
-                            placeholder: "Parcelas"
-                        },
-                        identificationType: {
-                            id: "form-checkout__identificationType",
-                            placeholder: "Tipo documento"
-                        },
-                        identificationNumber: {
-                            id: "form-checkout__identificationNumber",
-                            placeholder: "Número documento"
-                        },
-                        issuer: {
-                            id: "form-checkout__issuer",
-                            placeholder: "Banco emissor"
-                        },
-                    },
-                    callbacks: {
-                        onFormMounted: error => {
-                            if (error) {
-                                console.error('Form mount error:', error);
-                                toast.error("Erro ao configurar o formulário");
-                                return;
-                            }
-                        },
-                        onSubmit: async (event) => {
-                            event.preventDefault();
-                            setLoading(true);
-                            toast.info("Processando pagamento...");
+        //         const cardForm = mp.cardForm({
+        //             amount: valorNumerico.toString(),
+        //             autoMount: true,
+        //             form: {
+        //                 id: "form-checkout",
+        //                 cardholderName: {
+        //                     id: "form-checkout__cardholderName",
+        //                     placeholder: "Nome no cartão"
+        //                 },
+        //                 cardholderEmail: {
+        //                     id: "form-checkout__cardholderEmail",
+        //                     placeholder: "E-mail"
+        //                 },
+        //                 cardNumber: {
+        //                     id: "form-checkout__cardNumber",
+        //                     placeholder: "Número do cartão"
+        //                 },
+        //                 expirationDate: {
+        //                     id: "form-checkout__expirationDate",
+        //                     placeholder: "MM/AA"
+        //                 },
+        //                 securityCode: {
+        //                     id: "form-checkout__securityCode",
+        //                     placeholder: "CVV"
+        //                 },
+        //                 installments: {
+        //                     id: "form-checkout__installments",
+        //                     placeholder: "Parcelas"
+        //                 },
+        //                 identificationType: {
+        //                     id: "form-checkout__identificationType",
+        //                     placeholder: "Tipo documento"
+        //                 },
+        //                 identificationNumber: {
+        //                     id: "form-checkout__identificationNumber",
+        //                     placeholder: "Número documento"
+        //                 },
+        //                 issuer: {
+        //                     id: "form-checkout__issuer",
+        //                     placeholder: "Banco emissor"
+        //                 },
+        //             },
+        //             callbacks: {
+        //                 onFormMounted: error => {
+        //                     if (error) {
+        //                         console.error('Form mount error:', error);
+        //                         toast.error("Erro ao configurar o formulário");
+        //                         return;
+        //                     }
+        //                 },
+        //                 onSubmit: async (event) => {
+        //                     event.preventDefault();
+        //                     setLoading(true);
+        //                     toast.info("Processando pagamento...");
 
-                            try {
-                                const formData = cardForm.getCardFormData();
-                                const response = await fetch("https://lanchouapp.site/endpoints/server.php", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({
-                                        tipo: "cartao",
-                                        valor: valorNumerico,
-                                        ...formData
-                                    })
-                                });
+        //                     try {
+        //                         const formData = cardForm.getCardFormData();
+        //                         const response = await fetch("https://lanchouapp.site/endpoints/server.php", {
+        //                             method: "POST",
+        //                             headers: { "Content-Type": "application/json" },
+        //                             body: JSON.stringify({
+        //                                 tipo: "cartao",
+        //                                 valor: valorNumerico,
+        //                                 ...formData
+        //                             })
+        //                         });
 
-                                const data = await response.json();
+        //                         const data = await response.json();
 
-                                if (data.id) {
-                                    pollingInterval.current = setInterval(() => {
-                                        checkPaymentStatus(data.id);
-                                    }, 3000);
-                                } else {
-                                    throw new Error("Pagamento não iniciado corretamente");
-                                }
-                            } catch (err) {
-                                console.error('Payment error:', err);
-                                toast.error("Erro ao processar pagamento");
-                                setLoading(false);
-                            }
-                        },
-                        onError: (error) => {
-                            console.error('MercadoPago error:', error);
-                            toast.error(`Erro: ${error.message || 'Erro no pagamento'}`);
-                            setLoading(false);
-                        }
-                    }
-                });
-            } catch (error) {
-                console.error('Initialization error:', error);
-                toast.error("Falha ao iniciar pagamento");
-            }
-        };
+        //                         if (data.id) {
+        //                             pollingInterval.current = setInterval(() => {
+        //                                 checkPaymentStatus(data.id);
+        //                             }, 3000);
+        //                         } else {
+        //                             throw new Error("Pagamento não iniciado corretamente");
+        //                         }
+        //                     } catch (err) {
+        //                         console.error('Payment error:', err);
+        //                         toast.error("Erro ao processar pagamento");
+        //                         setLoading(false);
+        //                     }
+        //                 },
+        //                 onError: (error) => {
+        //                     console.error('MercadoPago error:', error);
+        //                     toast.error(`Erro: ${error.message || 'Erro no pagamento'}`);
+        //                     setLoading(false);
+        //                 }
+        //             }
+        //         });
+        //     } catch (error) {
+        //         console.error('Initialization error:', error);
+        //         toast.error("Falha ao iniciar pagamento");
+        //     }
+        // };
 
-        script.onerror = () => {
-            toast.error("Falha ao carregar serviço de pagamentos");
-        };
+        // script.onerror = () => {
+        //     toast.error("Falha ao carregar serviço de pagamentos");
+        // };
 
         document.body.appendChild(script);
 
