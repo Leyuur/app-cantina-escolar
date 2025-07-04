@@ -22,6 +22,11 @@ export default function Login({ setPage }) {
       toast.error("Você deve digitar algo.")
       return false
     }
+
+    // setPage(<FuncDashboard setPage={setPage} nomeFunc={"teste"} />)
+    // setPage(<AdmDashboard setPage={setPage} nomeAdmin={"teste"} />)
+    // setPage(<AlunoDashboard setPage={setPage} />)
+
     setLoading(true)
     const login = await verificarUsuario(user, pass)
     setLoading(false)

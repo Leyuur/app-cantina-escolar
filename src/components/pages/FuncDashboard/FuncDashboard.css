@@ -1,0 +1,10 @@
+.item-selecionado {
+    border: 1.5px solid #ddd;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.item-selecionado button {
+    width: 10px;
+    padding: 10px;
+}

@@ -23,7 +23,7 @@ function App() {
     <>
       <Router>
         <Routes>
-          <Route path="/" element={page} />
+          <Route path="/teste" element={page} />
           <Route path="/dashboard" element={<AlunoDashboard setPage={setPage} />} />
           <Route path="/sucesso" element={<PagamentoSucesso setPage={setPage} />} />
           <Route path="/falhou" element={<PagamentoFalhou />} />

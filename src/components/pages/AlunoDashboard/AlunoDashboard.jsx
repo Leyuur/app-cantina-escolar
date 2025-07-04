@@ -413,7 +413,7 @@ export default function AlunoDashboard({ setPage }) {
                             <ul className="historico-lista">
                                 {historicoFiltrado.length > 0 ? (
                                     historicoFiltrado.map((item, index) => (
-                                        <li className={`transacao ${item.tipo} tooltip`} key={index}>
+                                        <li className={`transacao ${item.tipo} tooltip`} title={item.id} key={index}>
                                             <span className="tooltip-text"><b>Id da compra:</b> {item.id}</span>
                                             <span className="transacao-icon">{item.tipo === 'Recarga' ? '🟢' : '🔴'}</span>
                                             <span className="descricao">

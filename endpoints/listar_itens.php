@@ -1,12 +1,12 @@
 <?php
-header('Content-Type: application/json');
 include_once "./conexao.php";
+header('Content-Type: application/json');
 
-$sql = "SELECT * FROM itens ORDER BY nome ASC";
-$result = $conn->query($sql);
-
+$result = mysqli_query($conn, "SELECT * FROM itens");
 $itens = [];
-while ($row = $result->fetch_assoc()) {
+
+while ($row = mysqli_fetch_assoc($result)) {
+    $row['preco'] = (float)$row['preco'];
     $itens[] = $row;
 }
 

@@ -77,6 +77,8 @@ foreach ($funcionarios as $func) {
     $nome = $func["nome"] ?? null;
     $senha = $func["senha"] ?? null;
 
+    $senha_hash = password_hash($senha, PASSWORD_DEFAULT);
+
     if (!$login || !$nome || !$senha) {
         $result["funcionarios_ignorados"]++;
         continue;
@@ -95,7 +97,7 @@ foreach ($funcionarios as $func) {
     $matricula = $login; // aqui usaremos o login como matrícula para consistência
 
     $stmt = $conn->prepare("INSERT INTO usuarios (matricula, senha, nome, saldo, funcionario, adm) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssiii", $matricula, $senha, $nome, $saldo, $funcionario, $adm);
+    $stmt->bind_param("sssiii", $matricula, $senha_hash, $nome, $saldo, $funcionario, $adm);
     if ($stmt->execute()) {
         $result["funcionarios_inseridos"]++;
     } else {

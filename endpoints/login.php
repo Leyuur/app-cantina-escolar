@@ -13,45 +13,57 @@ $rawInput = file_get_contents("php://input");
 log_to_file("Raw input recebido: " . $rawInput, "login");
 
 $input = json_decode($rawInput, true);
-
 $response = ["success" => false];
 
 if (isset($input["user"]) && isset($input["senha"])) {
     $user = $input["user"];
-    $senha = $input["senha"];
+    $senhaDigitada = $input["senha"];
 
-    log_to_file("Tentando login com: user=$user, senha=$senha", "login");
+    log_to_file("Tentando login com: user=$user", "login");
 
-    $sql = "SELECT * FROM usuarios WHERE matricula = ? AND senha = ?";
+    // Busca o usuário pela matrícula
+    $sql = "SELECT * FROM usuarios WHERE matricula = ?";
     $stmt = $conn->prepare($sql);
 
     if (!$stmt) {
         log_to_file("Erro ao preparar statement: " . $conn->error, "login");
     }
 
-    $stmt->bind_param("ss", $user, $senha);
+    $stmt->bind_param("s", $user);
     $stmt->execute();
-
     $result = $stmt->get_result();
 
     if ($result && $result->num_rows > 0) {
         $row = $result->fetch_assoc();
-        $response = [
-            "success" => true,
-            "nome" => $row["nome"],
-            "matricula" => $row["matricula"],
-            "saldo" => $row["saldo"]
-        ];
 
-        if ($row["adm"] == 1) {
-            $response["adm"] = true;
-        } else if ($row["funcionario"] == 1) {
-            $response["funcionario"] = true;
+        $senhaHashArmazenada = $row["senha"];
+        $tipo = $row["adm"] == 1 ? "adm" : ($row["funcionario"] == 1 ? "funcionario" : "aluno");
+
+        // Se for funcionário ou admin, usa password_verify
+        if (($row["adm"] == 1 || $row["funcionario"] == 1) && !password_verify($senhaDigitada, $senhaHashArmazenada)) {
+            log_to_file("Senha incorreta para $tipo $user", "login");
         }
+        // Se for aluno, usa comparação direta
+        else if (($row["adm"] == 0 && $row["funcionario"] == 0) && $senhaDigitada !== $senhaHashArmazenada) {
+            log_to_file("Senha incorreta para aluno $user", "login");
+        } else {
+            $response = [
+                "success" => true,
+                "nome" => $row["nome"],
+                "matricula" => $row["matricula"],
+                "saldo" => $row["saldo"]
+            ];
 
-        log_to_file("Login bem-sucedido para $user", "login");
+            if ($row["adm"] == 1) {
+                $response["adm"] = true;
+            } else if ($row["funcionario"] == 1) {
+                $response["funcionario"] = true;
+            }
+
+            log_to_file("Login bem-sucedido para $tipo $user", "login");
+        }
     } else {
-        log_to_file("Login falhou: usuário ou senha incorretos.", "login");
+        log_to_file("Login falhou: usuário não encontrado", "login");
     }
 
     $stmt->close();
